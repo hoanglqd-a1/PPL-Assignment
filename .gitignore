@@ -1,0 +1,6 @@
+__pycache__/
+helper.py 
+main.go
+solutions/
+testcases/
+*.DS_Store
