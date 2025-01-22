@@ -27,13 +27,24 @@ options{
 
 program  : decl+ EOF ;
 
-decl: funcdecl | vardecl  ;
+decl: funcdecl | vardecl | constdecl ;
 
-vardecl: 'var' ID 'int' ';' ;
+data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
+value: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
 
-arraydecl: 'var' ID ('[' INTEGER ']')+ (INT_ | FLOAT_ | STRING_ | BOOLEAN_);
+//* var declare. Note that we have not implemented constant expression yet */
+vardecl: VAR_ ID (data_type | data_type? ASSIGN value) ';' ;
 
-funcdecl: 'func' ID '(' ')' '{' '}' ';' ;
+//* const. Note that we have not implemented constant expression yet */
+constdecl: CONST_ ID ASSIGN value ';' ;
+
+arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type ';' ;
+
+//* function. Note that we have not implemented function body yet */
+parameter: ID data_type ;
+parameterlst: parameter COMMA parameterlst | parameter ;
+receiver: ID ID ;
+funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' ';'? ;
 
 NL: '\n' -> skip; //skip newlines
 
@@ -64,11 +75,16 @@ TRUE_: 'true' ;
 FALSE_: 'false' ;
 
 /** Operators */
-OP1: '+' | '-' | '*' | '/' | '%' ;
 OP2: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 OP3: '&&' | '||' | '!' ;
-OP4: '=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
+OP4: '+=' | '-=' | '*=' | '/=' | '%=' ;
 OP5: '.' ;
+ASSIGN: '=' ;
+ADD: '+' ;
+SUB: '-' ;
+MUL: '*' ;
+DIV: '/' ;
+MOD: '%' ;
 
 /** Seperators */
 LPAREN: '(' ;

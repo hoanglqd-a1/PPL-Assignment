@@ -93,3 +93,9 @@ class LexerSuite(unittest.TestCase):
     def test_unclosed_string5(self):
         """test unclosed string"""
         self.assertTrue(TestLexer.checkLexeme("\"if else \\n if else", "Unclosed string: if else ", 130))
+    def test_identifier0(self):
+        """test identifier"""
+        self.assertTrue(TestLexer.checkLexeme("abcABC[ 098xdef }","abcABC,[,0,98,xdef,},<EOF>",131))
+    def test_floating_point5(self):
+        """test floating point"""
+        self.assertTrue(TestLexer.checkLexeme("0X1234.5e+7","0X1234,.,5,e,+,7,<EOF>",132))
