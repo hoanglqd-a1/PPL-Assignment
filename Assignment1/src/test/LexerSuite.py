@@ -6,7 +6,6 @@ class LexerSuite(unittest.TestCase):
     def test_lower_identifier(self):
         """test identifiers"""
         self.assertTrue(TestLexer.checkLexeme("abc","abc,<EOF>",101))
-    
     def test_wrong_token(self):
         self.assertTrue(TestLexer.checkLexeme("ab?sVN","ab,ErrorToken ?",102))
     def test_keyword_var(self):
@@ -99,3 +98,29 @@ class LexerSuite(unittest.TestCase):
     def test_floating_point5(self):
         """test floating point"""
         self.assertTrue(TestLexer.checkLexeme("0X1234.5e+7","0X1234,.,5,e,+,7,<EOF>",132))
+    def test_operators0(self):
+        """test operators"""
+        self.assertTrue(TestLexer.checkLexeme("== != < <= > >= && || ! := += -= *= /= %= =","==,!=,<,<=,>,>=,&&,||,!,:=,+=,-=,*=,/=,%=,=,<EOF>",133))
+    def test_operators1(self):
+        """test operators"""
+        self.assertTrue(TestLexer.checkLexeme("abc.def[10]","abc,.,def,[,10,],<EOF>",134))
+    def test_operators2(self):
+        """test operators"""
+        self.assertTrue(TestLexer.checkLexeme("abc.def[abc.def()].def[10] >= _XADC.def[0][123]","abc,.,def,[,abc,.,def,(,),],.,def,[,10,],>=,_XADC,.,def,[,0,],[,123,],<EOF>",135))
+    def test_operators3(self):
+        """test operators"""
+        self.assertTrue(TestLexer.checkLexeme("a[0][0](1, 2, \"asdasd\", true).asd.asdasd","a,[,0,],[,0,],(,1,,,2,,,\"asdasd\",,,true,),.,asd,.,asdasd,<EOF>",136))
+    def test_newline0(self):
+        """test newline"""
+        input = """abc = 10
+        def = 20"""
+        expect = "abc,=,10,def,=,20,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,137))
+    def test_newline1(self):
+        """test newline"""
+        input = """var a = 10 var b = 12 var c = 13
+                var a = 10
+                var b = 12
+                var c = 13"""
+        expect = "var,a,=,10,var,b,=,12,var,c,=,13,var,a,=,10,var,b,=,12,var,c,=,13,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,138))

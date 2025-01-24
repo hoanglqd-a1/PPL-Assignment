@@ -66,7 +66,7 @@ class ParserSuite(unittest.TestCase):
         self.assertTrue(TestParser.checkParser(input,expect,214))
     def test_vardecl9(self):
         input = """a int = 6;"""
-        expect = "Error on line 1 col 1: a"
+        expect = "Error on line 1 col 3: int"
         self.assertTrue(TestParser.checkParser(input,expect,215))
     def test_vardecl10(self):
         input = """var a = 0x1234ABCD;"""
@@ -124,3 +124,15 @@ class ParserSuite(unittest.TestCase):
         input = """func main int {}"""
         expect = "Error on line 1 col 11: int"
         self.assertTrue(TestParser.checkParser(input,expect,229))
+    def test_pow_syntax0(self):
+        input = """a.b"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,230))
+    def test_pow_syntax1(self):
+        input = """abc[asda.asd[1]][ghj(12.3).ref(false)].lo(lqd)"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,231))
+    def test_pow_syntax2(self):
+        input = """abc[asda.asd"""
+        expect = "Error on line 1 col 4: ["
+        self.assertTrue(TestParser.checkParser(input,expect,232))

@@ -27,16 +27,24 @@ options{
 
 program  : decl+ EOF ;
 
-decl: funcdecl | vardecl | constdecl ;
+decl: lrhs | constdecl | funcdecl | vardecl ;
 
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
-value: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
+literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
+
+//* left - right hand side element */
+lrhs: lrhs (function_call | array_element | struct_field) | ID | literal ;
+lhs:  lrhs (array_element | struct_field) | ID ;
+struct_field: '.' ID ;
+function_call: '(' lrhs_list ')' ;
+array_element: '[' lrhs ']' ;
+lrhs_list: (lrhs ',' lrhs_list | lrhs)? ;
 
 //* var declare. Note that we have not implemented constant expression yet */
-vardecl: VAR_ ID (data_type | data_type? ASSIGN value) ';' ;
+vardecl: VAR_ ID (data_type | data_type? ASSIGN literal) ';' ;
 
 //* const. Note that we have not implemented constant expression yet */
-constdecl: CONST_ ID ASSIGN value ';' ;
+constdecl: CONST_ ID ASSIGN literal ';' ;
 
 arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type ';' ;
 
@@ -77,7 +85,7 @@ FALSE_: 'false' ;
 /** Operators */
 OP2: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 OP3: '&&' | '||' | '!' ;
-OP4: '+=' | '-=' | '*=' | '/=' | '%=' ;
+OP4: ':=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
 OP5: '.' ;
 ASSIGN: '=' ;
 ADD: '+' ;
