@@ -124,15 +124,35 @@ class ParserSuite(unittest.TestCase):
         input = """func main int {}"""
         expect = "Error on line 1 col 11: int"
         self.assertTrue(TestParser.checkParser(input,expect,229))
-    def test_pow_syntax0(self):
+    def test_expr_syntax0(self):
         input = """a.b"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,230))
-    def test_pow_syntax1(self):
+    def test_expr_syntax1(self):
         input = """abc[asda.asd[1]][ghj(12.3).ref(false)].lo(lqd)"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,231))
-    def test_pow_syntax2(self):
+    def test_expr_syntax2(self):
         input = """abc[asda.asd"""
-        expect = "Error on line 1 col 4: ["
+        expect = "Error on line 1 col 13: <EOF>"
         self.assertTrue(TestParser.checkParser(input,expect,232))
+    def test_expr_syntax3(self):
+        input = """10 + abc || efd >= 10 && 123 % 10 + ARE.xyz[123] || !(true && false)"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,233))
+    def test_expr_syntax4(self):
+        input = """- FUNC.abc(\"asda\", 10)[123][12] / 10.0 * (abc() + 10) || 12 % 23 - 5.5 < 0"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,234))
+    def test_expr_syntax5(self):
+        input = """abcasd && (true || false && !(var1 == var2.ref()) ) || !(def && !ahg)"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,235))
+    def test_expr_syntax6(self):
+        input = """acv[123][(abc.def.efd[0][0b101] + efg) * 10].get(123, 10.0, true)"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,236))
+    def test_expr_syntax7(self):
+        input = """\"Hello World\".upper()"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,237))

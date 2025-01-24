@@ -27,18 +27,24 @@ options{
 
 program  : decl+ EOF ;
 
-decl: lrhs | constdecl | funcdecl | vardecl ;
+decl: expr0 | constdecl | funcdecl | vardecl ;
 
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
 
-//* left - right hand side element */
-lrhs: lrhs (function_call | array_element | struct_field) | ID | literal ;
-lhs:  lrhs (array_element | struct_field) | ID ;
-struct_field: '.' ID ;
-function_call: '(' lrhs_list ')' ;
-array_element: '[' lrhs ']' ;
-lrhs_list: (lrhs ',' lrhs_list | lrhs)? ;
+//* expression */
+expr0: expr1 ('||' expr1)* ;
+expr1: expr2 ('&&' expr2)* ;
+expr2: expr3 (COMPARISON_OP expr3)* ;
+expr3: expr4 ((ADD || SUB) expr4)* ;
+expr4: expr5 ((MUL | DIV | MOD) expr5)* ;
+expr5: ('-' | '!')? expr6 ;
+expr6: expr7 ('.' ID | '[' expr0 ']' | '(' expr_list ')')* ;
+expr7: '(' expr0 ')' | ID | literal ;
+expr_list: (expr0 (',' expr0)*)? ;
+
+//* left hand side */
+lhs: expr6 ;
 
 //* var declare. Note that we have not implemented constant expression yet */
 vardecl: VAR_ ID (data_type | data_type? ASSIGN literal) ';' ;
@@ -83,7 +89,7 @@ TRUE_: 'true' ;
 FALSE_: 'false' ;
 
 /** Operators */
-OP2: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
+COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 OP3: '&&' | '||' | '!' ;
 OP4: ':=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
 OP5: '.' ;
