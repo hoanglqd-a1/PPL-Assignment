@@ -222,6 +222,26 @@ b := 1.0;"""
         """
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,247))
+    def test_arraydecl0(self):
+        input = """var a [10]int = [10]int{1,2,3,4,5,6,7,8,9,10};"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,248))
+    def test_arraydecl1(self):
+        input = """var a [3][2] int = [3][2]int{{1,2},{3,4},{5,6}};"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,249))
+    def test_arraydecl2(self):
+        input = """var a [2][1][1][1] float = [2][1][1][1]int{{{{1}}},{{{1}}}};"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,250))
+    def test_arraydecl3(self):
+        input = """var b [3] = [3]int{1,2,3};"""
+        expect = "Error on line 1 col 11: ="
+        self.assertTrue(TestParser.checkParser(input,expect,251))
+    def test_arraydecl4(self):
+        input = """var b [3] string = [3] {1,2,3};"""
+        expect = "Error on line 1 col 24: {"
+        self.assertTrue(TestParser.checkParser(input,expect,252))
     def test_expr_syntax0(self):
         input = """a.b"""
         expect = "successful"

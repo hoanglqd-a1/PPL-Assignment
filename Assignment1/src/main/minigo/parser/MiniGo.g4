@@ -27,10 +27,7 @@ options{
 
 program: decl+ EOF ;
 
-decl: expr0 | comment | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl ;
-
-data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
-literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
+decl: expr0 | comment | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl | arraydecl;
 
 //* comment */
 comment: SINGLE_LINE_CMT | MULTI_LINE_CMT ;
@@ -58,11 +55,11 @@ vardecl: VAR_ ID (data_type | data_type? ASSIGN expr0) end_stm ;
 //* const */
 constdecl: CONST_ ID ASSIGN expr0 end_stm ;
 
-arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type end_stm ;
+arraydecl: VAR_ ID ('[' expr0 ']')+ data_type ASSIGN arr_literal end_stm ;
 
 //* function. Note that we have not implemented function body yet */
 parameter: ID data_type ;
-parameterlst: parameter COMMA parameterlst | parameter ;
+parameterlst: parameter (COMMA parameter)* ;
 receiver: ID ID ;
 funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' end_stm ;
 
@@ -73,6 +70,12 @@ method_para_list: ID data_type? (',' ID data_type?)* ;
 methoddecl: ID '(' method_para_list? ')' data_type? end_stm ;
 interfacedecl: TYPE_ ID INTERFACE_ '{' end_stm? methoddecl* '}' end_stm ;
 
+arr_elem: expr0 | arr_elem_list ;
+arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
+arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;
+struct_literal: ID '{' parameterlst? '}' ;
+data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
+literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | arr_literal | struct_literal ;
 end_stm: (SEMICOLON | NL)+ ;
 NL: '\n' ;
 
