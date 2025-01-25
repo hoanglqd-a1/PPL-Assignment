@@ -118,9 +118,6 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme(input,expect,137))
     def test_newline1(self):
         """test newline"""
-        input = """var a = 10 var b = 12 var c = 13
-                var a = 10
-                var b = 12
-                var c = 13"""
-        expect = "var,a,=,10,var,b,=,12,var,c,=,13,var,a,=,10,var,b,=,12,var,c,=,13,<EOF>"
+        input = """a *= 2; b -= 15.6 c /= \"asdasd\""""
+        expect = "a,*=,2,;,b,-=,15.6,c,/=,\"asdasd\",<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,138))

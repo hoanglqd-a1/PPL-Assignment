@@ -25,9 +25,9 @@ options{
 	language=Python3;
 }
 
-program  : decl+ EOF ;
+program: decl+ EOF ;
 
-decl: expr0 | constdecl | funcdecl | vardecl ;
+decl: expr0 | assigning | vardecl | constdecl | funcdecl ;
 
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
@@ -46,21 +46,25 @@ expr_list: (expr0 (',' expr0)*)? ;
 //* left hand side */
 lhs: expr6 ;
 
-//* var declare. Note that we have not implemented constant expression yet */
-vardecl: VAR_ ID (data_type | data_type? ASSIGN literal) ';' ;
+//* assigning value statement */
+assigning: lhs ASSIGN1 literal end_stm ;
+
+//* var declare statement. Note that we have not implemented constant expression yet */
+vardecl: VAR_ ID (data_type | data_type? ASSIGN literal) end_stm ;
 
 //* const. Note that we have not implemented constant expression yet */
-constdecl: CONST_ ID ASSIGN literal ';' ;
+constdecl: CONST_ ID ASSIGN literal end_stm ;
 
-arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type ';' ;
+arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type end_stm ;
 
 //* function. Note that we have not implemented function body yet */
 parameter: ID data_type ;
 parameterlst: parameter COMMA parameterlst | parameter ;
 receiver: ID ID ;
-funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' ';'? ;
+funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' end_stm ;
 
-NL: '\n' -> skip; //skip newlines
+end_stm: SEMICOLON | NL ;
+NL: '\n' ;
 
 WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
 
@@ -91,7 +95,7 @@ FALSE_: 'false' ;
 /** Operators */
 COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 OP3: '&&' | '||' | '!' ;
-OP4: ':=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
+ASSIGN1: ':=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
 OP5: '.' ;
 ASSIGN: '=' ;
 ADD: '+' ;
