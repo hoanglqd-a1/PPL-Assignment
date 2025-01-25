@@ -27,10 +27,13 @@ options{
 
 program: decl+ EOF ;
 
-decl: expr0 | assigning | vardecl | constdecl | funcdecl ;
+decl: expr0 | comment | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl ;
 
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ ;
+
+//* comment */
+comment: SINGLE_LINE_CMT | MULTI_LINE_CMT ;
 
 //* expression */
 expr0: expr1 ('||' expr1)* ;
@@ -63,12 +66,20 @@ parameterlst: parameter COMMA parameterlst | parameter ;
 receiver: ID ID ;
 funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' end_stm ;
 
-end_stm: SEMICOLON | NL ;
+fielddecl: ID data_type end_stm ;
+structdecl: TYPE_ ID STRUCT_ '{' end_stm? fielddecl* '}' end_stm ;
+
+method_para_list: ID data_type? (',' ID data_type?)* ;
+methoddecl: ID '(' method_para_list? ')' data_type? end_stm ;
+interfacedecl: TYPE_ ID INTERFACE_ '{' end_stm? methoddecl* '}' end_stm ;
+
+end_stm: (SEMICOLON | NL)+ ;
 NL: '\n' ;
 
 WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
 
-COMMENT: '\\\\' | '\\*' | '*\\' ;
+SINGLE_LINE_CMT: '//' ~[\n]* '\n' ;
+MULTI_LINE_CMT: '/*' (. | MULTI_LINE_CMT)*? '*/' ;
 
 /** Keywords */
 IF_: 'if' ;

@@ -142,6 +142,58 @@ b := 1.0;"""
         input = """a *= 2; b -= 15.6 c /= \"asdasd\""""        
         expect = "Error on line 1 col 19: c"
         self.assertTrue(TestParser.checkParser(input,expect,233))
+    def test_struct_decl0(self):
+        input = """type A struct{ a int 
+        };"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,234))
+    def test_struct_decl1(self):
+        input = """type A struct {a int; b float ;}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,235))
+    def test_struct_decl2(self):
+        input = """type A struct { 
+        a int
+        c string
+        }"""
+        expect = "Error on line 4 col 10: <EOF>"
+        self.assertTrue(TestParser.checkParser(input,expect,236))
+    def test_struct_decl3(self):
+        input = """type A struct { 
+        if int; 
+        else float ;}
+        """
+        expect = "Error on line 2 col 9: if"
+        self.assertTrue(TestParser.checkParser(input,expect,237))
+    def test_interface_decl0(self):
+        input = """type A interface{ 
+        a() int;
+        b(c int) float;
+        C()
+        D(a, b string)
+        };"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,238))
+    def test_interface_decl1(self):
+        input = """type A interface  { 
+        function(a, b, c, d int, e, f string, g, h, i float, j, k, l, m, n boolean); func0() boolean
+        };"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,239))
+    def test_interface_decl2(self):
+        input = """type A interface{ 
+        a() int b() float
+        };"""
+        expect = "Error on line 2 col 17: b"
+        self.assertTrue(TestParser.checkParser(input,expect,240))
+    def test_interface_decl3(self):
+        input = """type A interface{
+        a int 
+        b() float
+        };"""
+        expect = "Error on line 2 col 11: int"
+        self.assertTrue(TestParser.checkParser(input,expect,241))
     def test_expr_syntax0(self):
         input = """a.b"""
         expect = "successful"
