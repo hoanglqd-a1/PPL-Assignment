@@ -47,10 +47,10 @@ class ParserSuite(unittest.TestCase):
         input = """var a string = "Hello World";"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,210))
-    # def test_vardecl5(self):
-    #     input = """var a int = 12.5;"""
-    #     expect = "Error on line 1 col 13: 12.5"
-    #     self.assertTrue(TestParser.checkParser(input,expect,211))
+    def test_vardecl5(self):
+        input = """var a int = 12.5 + 12 * -3;"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,211))
     def test_vardecl6(self):
         input = """var a int = 6;"""
         expect = "successful"
@@ -194,6 +194,34 @@ b := 1.0;"""
         };"""
         expect = "Error on line 2 col 11: int"
         self.assertTrue(TestParser.checkParser(input,expect,241))
+    def test_assign4(self):
+        input = """a += -1.0 * 2 || true && false;"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,242))
+    def test_assign5(self):
+        input = """a[1][2][b(1)] %= n[2] * func0(1)
+        a[1][3] += 1.0 * 2 || true && false;"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,243))
+    def test_vardecl15(self):
+        input = """var a = \"string\" + \"string\" * 2 / 34;"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,244))
+    def test_vardecl16(self):
+        input = """var func = 2.0 * (4 * 0.5)
+        """
+        expect = "Error on line 1 col 5: func"
+        self.assertTrue(TestParser.checkParser(input,expect,245))
+    def test_constdecl2(self):
+        input = """const a = 2.0 * (4 * 0.5)
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,246))
+    def test_constdecl3(self):
+        input = """const a = abc[ref[1][2]] * 90 - ero % 1;
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,247))
     def test_expr_syntax0(self):
         input = """a.b"""
         expect = "successful"

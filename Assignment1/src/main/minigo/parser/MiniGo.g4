@@ -50,13 +50,13 @@ expr_list: (expr0 (',' expr0)*)? ;
 lhs: expr6 ;
 
 //* assigning value statement */
-assigning: lhs ASSIGN1 literal end_stm ;
+assigning: lhs ASSIGN1 expr0 end_stm ;
 
-//* var declare statement. Note that we have not implemented constant expression yet */
-vardecl: VAR_ ID (data_type | data_type? ASSIGN literal) end_stm ;
+//* var declare statement */
+vardecl: VAR_ ID (data_type | data_type? ASSIGN expr0) end_stm ;
 
-//* const. Note that we have not implemented constant expression yet */
-constdecl: CONST_ ID ASSIGN literal end_stm ;
+//* const */
+constdecl: CONST_ ID ASSIGN expr0 end_stm ;
 
 arraydecl: VAR_ ID ('[' INTEGER ']')+ data_type end_stm ;
 
