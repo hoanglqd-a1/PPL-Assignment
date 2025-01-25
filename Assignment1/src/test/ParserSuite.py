@@ -157,7 +157,7 @@ b := 1.0;"""
         a int
         c string
         }"""
-        expect = "Error on line 4 col 10: <EOF>"
+        expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,236))
     def test_struct_decl3(self):
         input = """type A struct { 

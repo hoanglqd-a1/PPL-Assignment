@@ -27,10 +27,7 @@ options{
 
 program: decl+ EOF ;
 
-decl: expr0 | comment | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl | arraydecl;
-
-//* comment */
-comment: SINGLE_LINE_CMT | MULTI_LINE_CMT ;
+decl: expr0 | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl | arraydecl;
 
 //* expression */
 expr0: expr1 ('||' expr1)* ;
@@ -76,13 +73,13 @@ arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;
 struct_literal: ID '{' parameterlst? '}' ;
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | arr_literal | struct_literal ;
-end_stm: (SEMICOLON | NL)+ ;
+end_stm: (SEMICOLON | NL)+ | EOF;
 NL: '\n' ;
 
 WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
 
-SINGLE_LINE_CMT: '//' ~[\n]* '\n' ;
-MULTI_LINE_CMT: '/*' (. | MULTI_LINE_CMT)*? '*/' ;
+SINGLE_LINE_CMT: '//' ~[\r\n]* '\n' -> channel(HIDDEN);
+MULTI_LINE_CMT: '/*' (. | MULTI_LINE_CMT)*? '*/'  -> channel(HIDDEN);
 
 /** Keywords */
 IF_: 'if' ;
