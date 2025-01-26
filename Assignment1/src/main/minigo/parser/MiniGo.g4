@@ -28,7 +28,7 @@ options{
 program: decl+ EOF ;
 
 decl: expr0 | statement | funcdecl | structdecl | interfacedecl ;
-statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat |  forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
+statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat | forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
 
 //* expression */
 expr0: expr1 ('||' expr1)* ;
@@ -59,8 +59,7 @@ arraydecl: VAR_ ID ('[' expr0 ']')+ data_type ASSIGN arr_literal end_stm ;
 parameter: ID (data_type | ID) ;
 parameterlst: parameter (COMMA parameter)* ;
 receiver: ID ID ;
-func_body: ;
-funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' func_body'}' end_stm ;
+funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' blockcode '}' end_stm ;
 
 //* struct */
 fielddecl: ID (data_type ('[' expr0 ']')* | ID | INTERFACE_) end_stm ;
@@ -78,9 +77,9 @@ else_: ELSE_ '{' blockcode '}' ;
 ifelse_stat: if_ elseif_* else_? end_stm;
 
 //* for statement */
-forloop_stat: FOR_  (expr0
+forloop_stat: FOR_  ( expr0
                     | assigning expr0 ';' lhs assigning expr0
-                    | ID ',' ID ':=' RANGE_ ID
+                    | ID ',' ID ASSIGN1 RANGE_ ID
                     ) '{' blockcode '}' end_stm ;
 
 //* break statement */

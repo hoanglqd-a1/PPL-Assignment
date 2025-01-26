@@ -155,5 +155,29 @@ class LexerSuite(unittest.TestCase):
         a /* nested comment */ var a int = 6 // This is a comment ;"""
         expect = "var,a,int,=,6,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,144))
+    def test_ifelse0(self):
+        """test ifelse"""
+        input = """if (a > b) {
+            a = b;
+            } else if (a < b) {
+            b = a;
+            } else {
+            a = b;
+            }"""
+        expect = "if,(,a,>,b,),{,\n,a,=,b,;,\n,},else,if,(,a,<,b,),{,\n,b,=,a,;,\n,},else,{,\n,a,=,b,;,\n,},<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,145))
+    def test_ifelse1(self):
+        """test ifelse"""
+        input = """if (a > b || c < d) {
+            a := b;
+        }
+        """
+        expect = "if,(,a,>,b,||,c,<,d,),{,\n,a,:=,b,;,\n,},\n,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,146))
+    def test_assign0(self):
+        """test assign"""
+        input = """a := 5;"""
+        expect = "a,:=,5,;,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,147))
     
     

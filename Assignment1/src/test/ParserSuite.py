@@ -242,6 +242,75 @@ b := 1.0;"""
         input = """var b [3] string = [3] {1,2,3};"""
         expect = "Error on line 1 col 24: {"
         self.assertTrue(TestParser.checkParser(input,expect,252))
+    def test_ifexpr0(self):
+        input = """if (a > b || c < d) {
+            a += 3 + 5
+        }
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,253))
+    def test_ifexpr1(self):
+        input = """if (a > b || c < d) {
+            a := b;
+            c := d
+        } else {
+            a := b;
+            c := d
+        }
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,254))
+    def test_ifexpr2(self):
+        input = """if () {
+            a := b;
+            c := d
+        } else if (a > b || c < d) {
+            a := b;
+            c := d
+        } else {
+            a := b;
+            c := d
+        }
+        """
+        expect = "Error on line 1 col 5: )"
+        self.assertTrue(TestParser.checkParser(input,expect,255))
+    def test_ifexpr3(self):
+        input = """if (a > b || c < d) {
+            a := b;
+            c := d
+        } else if (a > b || c < d) {
+            a := b;
+            c := d
+        } else if (a > b || c < d) {
+            a := b;
+            c := d
+        } else {
+            a := b;
+            c := d
+        }
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,256))
+    def test_ifexpr4(self):
+        input = """if (a > b || c < d) { a := b; c := d
+        }else { a := b;
+            c := d
+        }
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,257))
+    def test_ifexpr5(self):
+        input = """else if (a > b || c < d) { a := b; c := d
+        } else { a := b;
+            c := d
+        }
+        """
+        expect = "Error on line 1 col 1: else"
+        self.assertTrue(TestParser.checkParser(input,expect,258))
+    def test_ifexpr6(self):
+        input = """if (a > 0) a:= 0"""
+        expect = """Error on line 1 col 12: a"""
+        self.assertTrue(TestParser.checkParser(input,expect,259))
     def test_expr_syntax0(self):
         input = """a.b"""
         expect = "successful"
