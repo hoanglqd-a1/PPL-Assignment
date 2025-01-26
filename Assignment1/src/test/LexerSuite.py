@@ -114,10 +114,46 @@ class LexerSuite(unittest.TestCase):
         """test newline"""
         input = """abc = 10
         def = 20"""
-        expect = "abc,=,10,def,=,20,<EOF>"
+        expect = "abc,=,10,\n,def,=,20,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,137))
     def test_newline1(self):
         """test newline"""
         input = """a *= 2; b -= 15.6 c /= \"asdasd\""""
         expect = "a,*=,2,;,b,-=,15.6,c,/=,\"asdasd\",<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,138))
+    def test_comment0(self):
+        """test comment"""
+        input = """// This is a comment"""
+        expect = "<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,139))
+    def test_comment1(self):
+        """test comment"""
+        input = """// This is a comment
+        This is not a comment"""
+        expect = "This,is,not,a,comment,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,140))
+    def test_comment2(self):
+        """test comment"""
+        input = """var a int = 6 // This is a comment ;"""
+        expect = "var,a,int,=,6,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,141))
+    def test_comment3(self):
+        """test comment"""
+        input = """/* This is
+        a multi-line comment */ var a int = 6"""
+        expect = "var,a,int,=,6,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,142))
+    def test_comment4(self):
+        """test comment"""
+        input = """/* This is
+        a /* nested */ comment */ var a int = 6 // This is a comment ;"""
+        expect = "var,a,int,=,6,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,143))
+    def test_comment5(self):
+        """test comment"""
+        input = """/* This is
+        a /* nested comment */ var a int = 6 // This is a comment ;"""
+        expect = "var,a,int,=,6,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,144))
+    
+    

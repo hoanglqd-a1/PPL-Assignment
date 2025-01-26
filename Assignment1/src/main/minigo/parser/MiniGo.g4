@@ -101,14 +101,16 @@ arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
 arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;
 struct_literal: ID '{' parameterlst? '}' ;
 data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
-literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | arr_literal | struct_literal ;
+literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal ;
 end_stm: (SEMICOLON | NL)+ | EOF;
+
+//* comment */
+SINGLE_LINE_CMT: '//' ~[\n]* ('\n' | EOF) -> skip;
+MULTI_LINE_CMT: '/*' (MULTI_LINE_CMT | .)*? '*/'  -> skip;
+
 NL: '\n' ;
 
 WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
-
-SINGLE_LINE_CMT: '//' ~[\r\n]* '\n' -> channel(HIDDEN);
-MULTI_LINE_CMT: '/*' (. | MULTI_LINE_CMT)*? '*/'  -> channel(HIDDEN);
 
 /** Keywords */
 IF_: 'if' ;
