@@ -27,7 +27,8 @@ options{
 
 program: decl+ EOF ;
 
-decl: expr0 | assigning | vardecl | constdecl | funcdecl | structdecl | interfacedecl | arraydecl;
+decl: expr0 | statement | funcdecl | structdecl | interfacedecl ;
+statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat |  forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
 
 //* expression */
 expr0: expr1 ('||' expr1)* ;
@@ -55,18 +56,46 @@ constdecl: CONST_ ID ASSIGN expr0 end_stm ;
 arraydecl: VAR_ ID ('[' expr0 ']')+ data_type ASSIGN arr_literal end_stm ;
 
 //* function. Note that we have not implemented function body yet */
-parameter: ID data_type ;
+parameter: ID (data_type | ID) ;
 parameterlst: parameter (COMMA parameter)* ;
 receiver: ID ID ;
-funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' '}' end_stm ;
+func_body: ;
+funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' func_body'}' end_stm ;
 
-fielddecl: ID data_type end_stm ;
+//* struct */
+fielddecl: ID (data_type ('[' expr0 ']')* | ID | INTERFACE_) end_stm ;
 structdecl: TYPE_ ID STRUCT_ '{' end_stm? fielddecl* '}' end_stm ;
 
+//* interface */
 method_para_list: ID data_type? (',' ID data_type?)* ;
 methoddecl: ID '(' method_para_list? ')' data_type? end_stm ;
 interfacedecl: TYPE_ ID INTERFACE_ '{' end_stm? methoddecl* '}' end_stm ;
 
+//* if statement */
+if_: IF_ '(' expr0 ')' '{' blockcode '}' end_stm? ;
+elseif_: ELSE_ IF_ '(' expr0 ')' '{' blockcode '}' end_stm? ;
+else_: ELSE_ '{' blockcode '}' ;
+ifelse_stat: if_ elseif_* else_? end_stm;
+
+//* for statement */
+forloop_stat: FOR_  (expr0
+                    | assigning expr0 ';' lhs assigning expr0
+                    | ID ',' ID ':=' RANGE_ ID
+                    ) '{' blockcode '}' end_stm ;
+
+//* break statement */
+break_stat: BREAK_ end_stm;
+
+//* continue statement */
+continue_stat: CONTINUE_ end_stm;
+
+//* call statement */
+funccall_stat: expr6 '(' expr_list ')' end_stm ;
+
+//* return statement */
+return_stat: RETURN_ end_stm ;
+
+blockcode: end_stm? statement* ;
 arr_elem: expr0 | arr_elem_list ;
 arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
 arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;

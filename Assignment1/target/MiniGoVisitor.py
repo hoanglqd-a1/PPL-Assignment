@@ -19,6 +19,11 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MiniGoParser#statement.
+    def visitStatement(self, ctx:MiniGoParser.StatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MiniGoParser#expr0.
     def visitExpr0(self, ctx:MiniGoParser.Expr0Context):
         return self.visitChildren(ctx)
@@ -104,6 +109,11 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MiniGoParser#func_body.
+    def visitFunc_body(self, ctx:MiniGoParser.Func_bodyContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MiniGoParser#funcdecl.
     def visitFuncdecl(self, ctx:MiniGoParser.FuncdeclContext):
         return self.visitChildren(ctx)
@@ -131,6 +141,56 @@ class MiniGoVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MiniGoParser#interfacedecl.
     def visitInterfacedecl(self, ctx:MiniGoParser.InterfacedeclContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#if_.
+    def visitIf_(self, ctx:MiniGoParser.If_Context):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#elseif_.
+    def visitElseif_(self, ctx:MiniGoParser.Elseif_Context):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#else_.
+    def visitElse_(self, ctx:MiniGoParser.Else_Context):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#ifelse_stat.
+    def visitIfelse_stat(self, ctx:MiniGoParser.Ifelse_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#forloop_stat.
+    def visitForloop_stat(self, ctx:MiniGoParser.Forloop_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#break_stat.
+    def visitBreak_stat(self, ctx:MiniGoParser.Break_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#continue_stat.
+    def visitContinue_stat(self, ctx:MiniGoParser.Continue_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#funccall_stat.
+    def visitFunccall_stat(self, ctx:MiniGoParser.Funccall_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#return_stat.
+    def visitReturn_stat(self, ctx:MiniGoParser.Return_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#blockcode.
+    def visitBlockcode(self, ctx:MiniGoParser.BlockcodeContext):
         return self.visitChildren(ctx)
 
 
