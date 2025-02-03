@@ -209,8 +209,23 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MiniGoParser#struct_para.
+    def visitStruct_para(self, ctx:MiniGoParser.Struct_paraContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#struct_para_lst.
+    def visitStruct_para_lst(self, ctx:MiniGoParser.Struct_para_lstContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MiniGoParser#struct_literal.
     def visitStruct_literal(self, ctx:MiniGoParser.Struct_literalContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#primitive_data_type.
+    def visitPrimitive_data_type(self, ctx:MiniGoParser.Primitive_data_typeContext):
         return self.visitChildren(ctx)
 
 

@@ -399,3 +399,197 @@ b := 1.0;"""
         input = """return 10"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,277))
+    def test_multipletest0(self):
+        input = """return 10; break; continue;"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,278))
+    def test_multipletest1(self):
+        input = """var a int = 10;
+        const b = 10.0 / 5.0;
+        p := Person{name: \"abc\", age: 10, address: \"abc\"}; """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,279))
+    def test_multipletest2(self):
+        input = """var y string = "abc";
+        var z = 10.24; var x int;
+        var arr [3]int = [3]int{1,2,3};
+        var arr1 [4]float ;
+        var arr2 [4][5]boolean ;
+        const a = "heo may con gio thu vuong trong mat em khi chieu nang tan";
+        d := 10 || 20 * (15 + 5 - abc.xyz) / 12;
+        // tung nu hon ngat moi mem tan vao trong gio menh mang
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,280))
+    def test_multipletest3(self):
+        input = """type Person struct {
+    name string
+    age int
+    address string
+}
+
+func main() {
+    var p Person
+    p.name := "abc"
+    p.age := 10
+    p.address := "abc"
+
+    var p1 Person = Person{name: "abc", age: 10, address: "abc"}
+}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,281))
+    def test_multipletest4(self):
+        input = """type Person struct {
+    name string
+    age int
+    address Address
+}
+type Address struct {
+    city string
+    country string
+}
+
+func main() {
+    var p Person
+    p.name := "abc"
+    p.age := 10
+    p.address := Address{city: "abc", country: "abc"}
+
+    var p1 Person = Person{name: "abc", age:10, address: Address{city: "abc", country: "abc"}}
+}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,282))
+    def test_multipletest5(self):
+        input = """type Calculator interface {
+    Add(x, y) int;
+    Subtract(a, b float, c int) float;
+    Reset()
+    SayHello(name string)
+}
+
+type CalculatorImpl struct {
+    name string
+    age int
+    address Address
+}
+
+func main() {
+    var p Calculator
+    p.name := "abc"
+    p.age := 10
+    p.address := Address{city: "abc", country: "abc"}
+
+    var p1 Calculator = CalculatorImpl{name: "abc", age: 10, address: Address{city: "abc", country: "abc"}}
+}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,283))
+    def test_multipletest6(self):
+        input = """type Calculator interface {
+    Add(x, y) int;
+    Subtract(a, b float, c int) float;
+    Reset()
+    SayHello(name string)
+}
+
+type CalculatorImpl struct {
+    name string
+    age int
+    address Address
+}
+
+func myFunc(){
+    var p Calculator
+    p.name := "abc"
+    p.age := 10
+    p.address := Address{city: "abc", country: "abc"}
+
+    var p1 Calculator = CalculatorImpl{name: "abc", age: 10, address: Address{city: "abc", country: "abc"}}
+
+    return 100 * 20 - 13.567
+}
+
+func sayHello(name string){
+    print("Hello " + name)
+    return
+}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,284))
+
+    def test_multipletest7(self):
+        input = """func Fibonacci(n int) int {
+    if (n == 0) {
+        return 0
+    } else if (n == 1) {
+        return 1
+    } else {
+        return Fibonacci(n-1) + Fibonacci(n-2)
+    }
+}
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,285))
+    def test_multipletest8(self):
+        input = """func Greeting() {
+    for i := 0; i < 1000; i+=1 {
+        print("Hello World")
+        str := input()
+        if (str == "exit") {
+            break
+        } else if (str == "continue") {
+            continue    
+        } else if (str == "tell me a joke") {
+            for _, value := range [3]int{1,2,3} {
+                tellMeAJoke()
+            }
+        } else {
+            print("I don't understand")
+        }
+    }
+}"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,286))
+    def test_multipletest9(self):
+        input = """for index, value := range arr{
+        print(value)
+        if (value > 100) {
+            i := 0
+            for arr1[i] != value {
+                for j:= 0; j < 10; j += 1 {
+                    print(arr1[j])
+                }
+                i += 1
+            }
+        } else if (value < 100) {
+            print("less than 100")
+            continue
+        } else {
+            print("dau phai yeu het tam, nguoi de tam, nguoi de tam")
+            break
+        }
+    } 
+        """
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,287))
+    def test_multipletest10(self):
+        input = """type Calculator struct {
+        name string
+        value int
+}
+func (c Calculator) Add(x int, y int) int {
+    return x + y
+}
+
+func (c Calculator) Subtract(a float, b float, c int) float {
+    return a - b
+}
+
+func (c Calculator) Reset() {
+    c.name := "abc"
+    c.value := 10
+}"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,288))

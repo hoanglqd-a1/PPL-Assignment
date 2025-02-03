@@ -53,7 +53,7 @@ vardecl: VAR_ ID (data_type | data_type? INIT expr0) end_stm ;
 //* const */
 constdecl: CONST_ ID INIT expr0 end_stm ;
 
-arraydecl: VAR_ ID ('[' expr0 ']')+ data_type INIT arr_literal end_stm ;
+arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (INIT arr_literal)? end_stm ;
 
 //* function. Note that we have not implemented function body yet */
 parameter: ID (data_type | ID) ;
@@ -99,8 +99,11 @@ blockcode: end_stm? statement* ;
 arr_elem: expr0 | arr_elem_list ;
 arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
 arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;
-struct_literal: ID '{' parameterlst? '}' ;
-data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
+struct_para: ID ':' literal ;
+struct_para_lst: struct_para (',' struct_para)*;
+struct_literal: ID '{' struct_para_lst? '}' ;
+primitive_data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
+data_type: primitive_data_type | ID ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal ;
 end_stm: (SEMICOLON | NL)+ | EOF;
 
