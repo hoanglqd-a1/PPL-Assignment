@@ -184,6 +184,11 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MiniGoParser#assign.
+    def visitAssign(self, ctx:MiniGoParser.AssignContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MiniGoParser#blockcode.
     def visitBlockcode(self, ctx:MiniGoParser.BlockcodeContext):
         return self.visitChildren(ctx)

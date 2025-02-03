@@ -27,14 +27,14 @@ options{
 
 program: decl+ EOF ;
 
-decl: expr0 | statement | funcdecl | structdecl | interfacedecl ;
+decl: statement | funcdecl | structdecl | interfacedecl ;
 statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat | forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
 
 //* expression */
 expr0: expr1 ('||' expr1)* ;
 expr1: expr2 ('&&' expr2)* ;
 expr2: expr3 (COMPARISON_OP expr3)* ;
-expr3: expr4 ((ADD || SUB) expr4)* ;
+expr3: expr4 ((ADD | SUB) expr4)* ;
 expr4: expr5 ((MUL | DIV | MOD) expr5)* ;
 expr5: ('-' | '!')? expr6 ;
 expr6: expr7 ('.' ID | '[' expr0 ']' | '(' expr_list ')')* ;
@@ -45,15 +45,15 @@ expr_list: (expr0 (',' expr0)*)? ;
 lhs: expr6 ;
 
 //* assigning value statement */
-assigning: lhs ASSIGN1 expr0 end_stm ;
+assigning: lhs assign expr0 end_stm ;
 
 //* var declare statement */
-vardecl: VAR_ ID (data_type | data_type? ASSIGN expr0) end_stm ;
+vardecl: VAR_ ID (data_type | data_type? INIT expr0) end_stm ;
 
 //* const */
-constdecl: CONST_ ID ASSIGN expr0 end_stm ;
+constdecl: CONST_ ID INIT expr0 end_stm ;
 
-arraydecl: VAR_ ID ('[' expr0 ']')+ data_type ASSIGN arr_literal end_stm ;
+arraydecl: VAR_ ID ('[' expr0 ']')+ data_type INIT arr_literal end_stm ;
 
 //* function. Note that we have not implemented function body yet */
 parameter: ID (data_type | ID) ;
@@ -78,8 +78,8 @@ ifelse_stat: if_ elseif_* else_? end_stm;
 
 //* for statement */
 forloop_stat: FOR_  ( expr0
-                    | assigning expr0 ';' lhs assigning expr0
-                    | ID ',' ID ASSIGN1 RANGE_ ID
+                    | ID ASSIGN expr0 ';' expr0 ';' ID UPT_ASSIGN expr0
+                    | ID ',' ID ASSIGN RANGE_ (ID | arr_literal)
                     ) '{' blockcode '}' end_stm ;
 
 //* break statement */
@@ -92,8 +92,9 @@ continue_stat: CONTINUE_ end_stm;
 funccall_stat: expr6 '(' expr_list ')' end_stm ;
 
 //* return statement */
-return_stat: RETURN_ end_stm ;
+return_stat: RETURN_ expr0? end_stm ;
 
+assign: UPT_ASSIGN | ASSIGN ;
 blockcode: end_stm? statement* ;
 arr_elem: expr0 | arr_elem_list ;
 arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
@@ -135,10 +136,11 @@ FALSE_: 'false' ;
 
 /** Operators */
 COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
-OP3: '&&' | '||' | '!' ;
-ASSIGN1: ':=' | '+=' | '-=' | '*=' | '/=' | '%=' ;
-OP5: '.' ;
-ASSIGN: '=' ;
+BOOLEAN_OP: '&&' | '||' | '!' ;
+UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' ;
+ASSIGN: ':=' ;
+DOT: '.' ;
+INIT: '=' ;
 ADD: '+' ;
 SUB: '-' ;
 MUL: '*' ;

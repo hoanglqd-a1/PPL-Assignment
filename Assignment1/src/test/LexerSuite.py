@@ -176,8 +176,8 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme(input,expect,146))
     def test_assign0(self):
         """test assign"""
-        input = """a := 5;"""
-        expect = "a,:=,5,;,<EOF>"
+        input = """a *= 2; b -= 15.6 c /= \"asdasd\""""
+        expect = "a,*=,2,;,b,-=,15.6,c,/=,\"asdasd\",<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,147))
     
     

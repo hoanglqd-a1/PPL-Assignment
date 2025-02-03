@@ -139,7 +139,7 @@ b := 1.0;"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,232))
     def test_assign3(self):
-        input = """a *= 2; b -= 15.6 c /= \"asdasd\""""        
+        input = """a *= 2; b -= 15.6 c"""        
         expect = "Error on line 1 col 19: c"
         self.assertTrue(TestParser.checkParser(input,expect,233))
     def test_struct_decl0(self):
@@ -311,35 +311,91 @@ b := 1.0;"""
         input = """if (a > 0) a:= 0"""
         expect = """Error on line 1 col 12: a"""
         self.assertTrue(TestParser.checkParser(input,expect,259))
-    def test_expr_syntax0(self):
-        input = """a.b"""
+    def test_forloop0(self):
+        input = """for i := 0; i < 10; i += 1 {
+        }
+        """
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21030))
-    def test_expr_syntax1(self):
-        input = """abc[asda.asd[1]][ghj(12.3).ref(false)].lo(lqd)"""
+        self.assertTrue(TestParser.checkParser(input,expect,260))
+    def test_forloop1(self):
+        input = """for i * 8 - 2 < 10 {
+            a := 100;
+        }
+        """
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21031))
-    def test_expr_syntax2(self):
-        input = """abc[asda.asd"""
-        expect = "Error on line 1 col 13: <EOF>"
-        self.assertTrue(TestParser.checkParser(input,expect,21032))
-    def test_expr_syntax3(self):
-        input = """10 + abc || efd >= 10 && 123 % 10 + ARE.xyz[123] || !(true && false)"""
+        self.assertTrue(TestParser.checkParser(input,expect,261))
+    def test_forloop2(self):
+        input = """for index, value := range arr {
+            a /= 100;
+            b -= 20;
+        }
+        """
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21033))
-    def test_expr_syntax4(self):
-        input = """- FUNC.abc(\"asda\", 10)[123][12] / 10.0 * (abc() + 10) || 12 % 23 - 5.5 < 0"""
+        self.assertTrue(TestParser.checkParser(input,expect,262))
+    def test_forloop3(self):
+        input = """for i < 10; i:= 10; i += 2 {}
+        """
+        expect = "Error on line 1 col 11: ;"
+        self.assertTrue(TestParser.checkParser(input,expect,263))
+    def test_forloop4(self):
+        input = """for i:= 10; i *= 2; i < 100 {}
+        """
+        expect = "Error on line 1 col 15: *="
+        self.assertTrue(TestParser.checkParser(input,expect,264))
+    def test_forloop5(self):
+        input = """for index, value := range [3]int{1,2,3} {}
+        """
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21034))
-    def test_expr_syntax5(self):
-        input = """abcasd && (true || false && !(var1 == var2.ref()) ) || !(def && !ahg)"""
+        self.assertTrue(TestParser.checkParser(input,expect,265))
+    def test_break0(self):
+        input = """break"""
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21035))
-    def test_expr_syntax6(self):
-        input = """acv[123][(abc.def.efd[0][0b101] + efg) * 10].get(123, 10.0, true)"""
+        self.assertTrue(TestParser.checkParser(input,expect,266))
+    def test_break1(self):
+        inpput = """break for i := 0; i < 10; i += 1 {
+            
+        }"""
+        expect = "Error on line 1 col 7: for"
+        self.assertTrue(TestParser.checkParser(inpput,expect,267))
+    def test_continue0(self):
+        input = """continue"""
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21036))
-    def test_expr_syntax7(self):
-        input = """\"Hello World\".upper()"""
+        self.assertTrue(TestParser.checkParser(input,expect,268))
+    def test_continue1(self):
+        input = """continue for i := 0; i < 10; i += 1 {
+            
+        }"""
+        expect = "Error on line 1 col 10: for"
+        self.assertTrue(TestParser.checkParser(input,expect,269))
+    def test_funccall0(self):
+        input = """a()"""
         expect = "successful"
-        self.assertTrue(TestParser.checkParser(input,expect,21037))
+        self.assertTrue(TestParser.checkParser(input,expect,270))
+    def test_funccall1(self):
+        input = """a(b, 10, "asc", false)"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,271))
+    def test_funccall2(self):
+        input = """abc.ads.ghj.xyz()"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,272))
+    def test_funccall3(self):
+        input = """fun(12, 3, 4,)"""
+        expect = "Error on line 1 col 14: )"
+        self.assertTrue(TestParser.checkParser(input,expect,273))
+    def test_funccall4(self):
+        input = """function("duanhcomangloilam" """
+        expect = "Error on line 1 col 30: <EOF>"
+        self.assertTrue(TestParser.checkParser(input,expect,274))
+    def test_funccall5(self):
+        input = """atvncg("ngoi", "chot", "nghe" "buoc", "em", "ve")"""
+        expect = "Error on line 1 col 31: \"buoc\""
+        self.assertTrue(TestParser.checkParser(input,expect,275))
+    def test_return0(self):
+        input = """return"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,276))
+    def test_return1(self):
+        input = """return 10"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,277))
