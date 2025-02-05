@@ -593,3 +593,240 @@ func (c Calculator) Reset() {
 }"""
         expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,288))
+    def test_multipletest11(self):
+        input = """// addNumbers takes two integers and returns their sum.
+func addNumbers(a int, b int) int {
+    sum := a + b // Implicit return variable usage
+    return sum
+}
+
+func main() {
+    // Declare and initialize two numbers using shorthand assignment
+    x := 5
+    y := 10
+    
+    // Call the function and store the result
+    result := addNumbers(x, y)
+    
+    // A no-op statement to use result and avoid unused variable error (normally we'd print it)
+    _ := result
+}"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,289))
+
+    def test_multipletest12(self):
+        input = """
+// Person represents an individual with a name and age.
+type Person struct {
+    Name string
+    Age  int
+}
+
+/*
+   Greet generates a greeting message for the person.
+   It returns a string formatted with the person's name and age.
+*/
+func (p Person) Greet() string {
+    return "Hello, my name is " + p.Name + " and I am " + stringify(rune(p.Age)) + " years old."
+}
+
+func main() {
+    // Create a new Person instance
+    p := Person{Name: "Alice", Age: 30}
+    
+    // Call the method
+    message := p.Greet()
+    
+    // Avoid unused variable warning
+    _ := message
+}
+"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,290))
+    
+    def test_multipletest13(self):
+        input = """// Person represents an individual with a name and age.
+type Person struct {
+    Name string
+    Age  int
+}
+
+/*
+   Greet generates a greeting message for the person.
+   It returns a string formatted with the person's name and age.
+*/
+func (p Person) Greet() string {
+    return "Hello, my name is " + p.Name + " and I am " + stringify(rune(p.Age)) + " years old."
+}
+
+/*
+   ComputeFactorial calculates the factorial of the person's age.
+   It uses a recursive approach.
+*/
+func (p Person) ComputeFactorial(n int) int {
+    if (n <= 1) {
+        return 1
+    }
+    return n * p.ComputeFactorial(n-1)
+}
+
+/*
+   IsAdult checks if the person is considered an adult.
+   It returns true if the age is 18 or older.
+*/
+func (p Person) IsAdult() bool {
+    return p.Age >= 18 && (p.Age%2 == 0 || p.ComputeFactorial(p.Age%5) > 10)
+}
+
+func main() {
+    // Create a new Person instance
+    p := Person{Name: "Alice", Age: 30}
+    
+    // Call the methods
+    message := p.Greet()
+    factorial := p.ComputeFactorial(p.Age)
+    isAdult := p.IsAdult()
+}
+"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,291))
+    def test_multipletest14(self):
+        input = """// Rectangle represents a geometric shape with width and height.
+type Rectangle struct {
+    Width  float64
+    Height float64
+}
+
+/*
+   Area calculates and returns the area of the rectangle.
+*/
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+/*
+   Perimeter calculates and returns the perimeter of the rectangle.
+*/
+func (r Rectangle) Perimeter() float64 {
+    return 2 * (r.Width + r.Height)
+}
+
+/*
+   FindMax finds the maximum number in an array.
+*/
+func FindMax(numbers int) int {
+    if (len(numbers) == 0) {
+        return 0
+    }
+    max := numbers[0]
+    for _, num := range numbers {
+        if (num > max) {
+            max := num
+        }
+    }
+    return max
+}
+
+func main() {
+    // Create a new Rectangle instance
+    rect := Rectangle{Width: 5.0, Height: 10.0}
+    
+    // Call the methods
+    area := rect.Area()
+    perimeter := rect.Perimeter()
+    
+    // Declare and initialize an array
+    numbers := [5]int{3, 7, 2, 9, 5}
+    maxNumber := FindMax(numbers)
+}
+"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,292))
+    def test_multipletest15(self):
+        input = """func main() {
+    // Declare and initialize an array
+    numbers := [10]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+    
+    // Iterate over the array using a for loop
+    for _, num := range numbers {
+        // Check if the number is even or odd using parenthesized boolean expressions
+        if (num%2 == 0) {
+            // Even number case
+            _ := "Even"
+        } else {
+            // Odd number case
+            _ := "Odd"
+        }
+    }
+}"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,293))
+    def test_multipletest16(self):
+        input = """
+func main() {
+    // Example using a for loop and if/else with parenthesized boolean expressions
+
+    for i := 0; i < 10; i+=1 {
+        if (i%2 == 0) { // Parentheses around the boolean expression
+            fmt.Printf("%d is even\n", i)
+        } else if (i > 5 && (i < 9 || i == 9)) { // Parentheses around compound boolean expression
+            fmt.Printf("%d is greater than 5 and less than 9 or equal to 9\n", i)
+        } else {
+            fmt.Printf("%d is odd\n", i)
+        }
+    }
+
+    names := [23]string{"Alice", "Bob", "Charlie", "David", "Eve"} // Another Example demonstrating different boolean conditions
+
+    for _, name := range names {
+        if (name == "Alice" || name == "Eve") { // Parentheses around the OR condition
+            fmt.Println(name, "is a popular name.")
+        } else if (name != "Bob" && (len(name) > 3)) { // Parentheses around the AND and length conditions
+            fmt.Println(name, "is a less common name with more than 3 characters.")
+        } else {
+            fmt.Println(name, "is a common name.")
+        }
+    }
+
+
+    // Example with a nested if
+
+    for j := 1; j <= 5; j+=2 {
+        fmt.Println("Outer loop:", j)
+        if (j > 2) {
+            if (j < 5) { // Nested if with parentheses
+                fmt.Println("  Inner loop: j is between 3 and 4")
+            } else {
+                fmt.Println("  Inner loop: j is 5")
+            }
+        }
+    }
+
+}"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,294))
+    def test_constdecl4(self):
+        input = """const x int = 10;"""
+        expect = "Error on line 1 col 9: int"
+        self.assertTrue(TestParser.checkParser(input,expect,295))
+    def test_funccall6(self):
+        input = """foo(2 + x, 4 / y - 1);"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,296))
+    def test_funccall7(self):
+        input = """m.goo(2 + foo(), 4 / bar() - arr[2][3]);"""
+        expect = "successful"
+        self.assertTrue(TestParser.checkParser(input,expect,297))
+    def test_funccall8(self):
+        input = """foo("asdasd" xyz + 6);"""
+        expect = "Error on line 1 col 14: xyz"
+        self.assertTrue(TestParser.checkParser(input,expect,298))
+    def test_assign7(self):
+        input = """a := foo := bar := 5;"""
+        expect = """Error on line 1 col 10: :="""
+        self.assertTrue(TestParser.checkParser(input,expect,299))
+    def test_arraydecl5(self):
+        input = """var arr [3]int = int{1,2,3};"""
+        expect = "Error on line 1 col 18: int"
+        self.assertTrue(TestParser.checkParser(input,expect,300))
+    

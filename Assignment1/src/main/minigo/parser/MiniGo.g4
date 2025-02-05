@@ -25,7 +25,7 @@ options{
 	language=Python3;
 }
 
-program: decl+ EOF ;
+program: end_stm? decl+ EOF ;
 
 decl: statement | funcdecl | structdecl | interfacedecl ;
 statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat | forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
@@ -53,6 +53,7 @@ vardecl: VAR_ ID (data_type | data_type? INIT expr0) end_stm ;
 //* const */
 constdecl: CONST_ ID INIT expr0 end_stm ;
 
+//* array */
 arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (INIT arr_literal)? end_stm ;
 
 //* function. Note that we have not implemented function body yet */
@@ -104,11 +105,11 @@ struct_para_lst: struct_para (',' struct_para)*;
 struct_literal: ID '{' struct_para_lst? '}' ;
 primitive_data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 data_type: primitive_data_type | ID ;
-literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal ;
+literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
 end_stm: (SEMICOLON | NL)+ | EOF;
 
 //* comment */
-SINGLE_LINE_CMT: '//' ~[\n]* ('\n' | EOF) -> skip;
+SINGLE_LINE_CMT: '//' ~[\n]* -> skip;
 MULTI_LINE_CMT: '/*' (MULTI_LINE_CMT | .)*? '*/'  -> skip;
 
 NL: '\n' ;

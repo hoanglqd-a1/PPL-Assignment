@@ -130,7 +130,7 @@ class LexerSuite(unittest.TestCase):
         """test comment"""
         input = """// This is a comment
         This is not a comment"""
-        expect = "This,is,not,a,comment,<EOF>"
+        expect = "\n,This,is,not,a,comment,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,140))
     def test_comment2(self):
         """test comment"""
