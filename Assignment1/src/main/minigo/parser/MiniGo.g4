@@ -179,4 +179,4 @@ ID: [_A-Za-z] [_A-Za-z0-9]* ;
 
 ERROR_CHAR: .;
 ILLEGAL_ESCAPE: '"' (Char | EscapeChar)* '\\' ~[\\"rtn] {self.text = self.text[1:]};
-UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.split("\\n")[0][1:]};
+UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.replace('\r','\n').split('\n')[0][1:]};

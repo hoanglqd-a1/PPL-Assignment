@@ -324,7 +324,7 @@ class MiniGoLexer(Lexer):
 
     def UNCLOSE_STRING_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 1:
-            self.text = self.text.split("\\n")[0][1:]
+            self.text = self.text.replace('\r','\n').split('\n')[0][1:]
      
 
 
