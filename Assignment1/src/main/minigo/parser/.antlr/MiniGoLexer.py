@@ -255,7 +255,7 @@ class MiniGoLexer(Lexer):
     UPT_ASSIGN = 31
     ASSIGN = 32
     DOT = 33
-    INIT = 34
+    EQUAL = 34
     ADD = 35
     SUB = 36
     MUL = 37
@@ -294,7 +294,7 @@ class MiniGoLexer(Lexer):
             "FOR_", "RETURN_", "FUNC_", "TYPE_", "STRUCT_", "INTERFACE_", 
             "STRING_", "INT_", "FLOAT_", "BOOLEAN_", "CONST_", "VAR_", "CONTINUE_", 
             "BREAK_", "RANGE_", "NIL_", "TRUE_", "FALSE_", "COMPARISON_OP", 
-            "BOOLEAN_OP", "UPT_ASSIGN", "ASSIGN", "DOT", "INIT", "ADD", 
+            "BOOLEAN_OP", "UPT_ASSIGN", "ASSIGN", "DOT", "EQUAL", "ADD", 
             "SUB", "MUL", "DIV", "MOD", "LPAREN", "RPAREN", "LSB", "RSB", 
             "LCB", "RCB", "COMMA", "SEMICOLON", "FLOAT", "INTEGER", "STRING", 
             "ID", "ERROR_CHAR", "ILLEGAL_ESCAPE", "UNCLOSE_STRING" ]
@@ -304,11 +304,12 @@ class MiniGoLexer(Lexer):
                   "TYPE_", "STRUCT_", "INTERFACE_", "STRING_", "INT_", "FLOAT_", 
                   "BOOLEAN_", "CONST_", "VAR_", "CONTINUE_", "BREAK_", "RANGE_", 
                   "NIL_", "TRUE_", "FALSE_", "COMPARISON_OP", "BOOLEAN_OP", 
-                  "UPT_ASSIGN", "ASSIGN", "DOT", "INIT", "ADD", "SUB", "MUL", 
-                  "DIV", "MOD", "LPAREN", "RPAREN", "LSB", "RSB", "LCB", 
-                  "RCB", "COMMA", "SEMICOLON", "Digit", "FLOAT", "DecInt", 
-                  "BinInt", "OctInt", "HexInt", "INTEGER", "Char", "EscapeChar", 
-                  "STRING", "ID", "ERROR_CHAR", "ILLEGAL_ESCAPE", "UNCLOSE_STRING" ]
+                  "UPT_ASSIGN", "ASSIGN", "DOT", "EQUAL", "ADD", "SUB", 
+                  "MUL", "DIV", "MOD", "LPAREN", "RPAREN", "LSB", "RSB", 
+                  "LCB", "RCB", "COMMA", "SEMICOLON", "Digit", "FLOAT", 
+                  "DecInt", "BinInt", "OctInt", "HexInt", "INTEGER", "Char", 
+                  "EscapeChar", "STRING", "ID", "ERROR_CHAR", "ILLEGAL_ESCAPE", 
+                  "UNCLOSE_STRING" ]
 
     grammarFileName = "MiniGo.g4"
 
@@ -366,7 +367,7 @@ class MiniGoLexer(Lexer):
             actions[30] = self.UPT_ASSIGN_action 
             actions[31] = self.ASSIGN_action 
             actions[32] = self.DOT_action 
-            actions[33] = self.INIT_action 
+            actions[33] = self.EQUAL_action 
             actions[34] = self.ADD_action 
             actions[35] = self.SUB_action 
             actions[36] = self.MUL_action 
@@ -532,9 +533,9 @@ class MiniGoLexer(Lexer):
             self.lastTokenType = 'DOT'
      
 
-    def INIT_action(self, localctx:RuleContext , actionIndex:int):
+    def EQUAL_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 26:
-            self.lastTokenType = 'INIT'
+            self.lastTokenType = 'EQUAL'
      
 
     def ADD_action(self, localctx:RuleContext , actionIndex:int):

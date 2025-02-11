@@ -221,7 +221,7 @@ class MiniGoParser ( Parser ):
                       "TYPE_", "STRUCT_", "INTERFACE_", "STRING_", "INT_", 
                       "FLOAT_", "BOOLEAN_", "CONST_", "VAR_", "CONTINUE_", 
                       "BREAK_", "RANGE_", "NIL_", "TRUE_", "FALSE_", "COMPARISON_OP", 
-                      "BOOLEAN_OP", "UPT_ASSIGN", "ASSIGN", "DOT", "INIT", 
+                      "BOOLEAN_OP", "UPT_ASSIGN", "ASSIGN", "DOT", "EQUAL", 
                       "ADD", "SUB", "MUL", "DIV", "MOD", "LPAREN", "RPAREN", 
                       "LSB", "RSB", "LCB", "RCB", "COMMA", "SEMICOLON", 
                       "FLOAT", "INTEGER", "STRING", "ID", "ERROR_CHAR", 
@@ -320,7 +320,7 @@ class MiniGoParser ( Parser ):
     UPT_ASSIGN=31
     ASSIGN=32
     DOT=33
-    INIT=34
+    EQUAL=34
     ADD=35
     SUB=36
     MUL=37
@@ -1313,8 +1313,8 @@ class MiniGoParser ( Parser ):
             return self.getTypedRuleContext(MiniGoParser.Data_typeContext,0)
 
 
-        def INIT(self):
-            return self.getToken(MiniGoParser.INIT, 0)
+        def EQUAL(self):
+            return self.getToken(MiniGoParser.EQUAL, 0)
 
         def expr0(self):
             return self.getTypedRuleContext(MiniGoParser.Expr0Context,0)
@@ -1355,7 +1355,7 @@ class MiniGoParser ( Parser ):
 
 
                 self.state = 211
-                self.match(MiniGoParser.INIT)
+                self.match(MiniGoParser.EQUAL)
                 self.state = 212
                 self.expr0()
                 pass
@@ -1385,8 +1385,8 @@ class MiniGoParser ( Parser ):
         def ID(self):
             return self.getToken(MiniGoParser.ID, 0)
 
-        def INIT(self):
-            return self.getToken(MiniGoParser.INIT, 0)
+        def EQUAL(self):
+            return self.getToken(MiniGoParser.EQUAL, 0)
 
         def expr0(self):
             return self.getTypedRuleContext(MiniGoParser.Expr0Context,0)
@@ -1413,7 +1413,7 @@ class MiniGoParser ( Parser ):
             self.state = 218
             self.match(MiniGoParser.ID)
             self.state = 219
-            self.match(MiniGoParser.INIT)
+            self.match(MiniGoParser.EQUAL)
             self.state = 220
             self.expr0()
             self.state = 221
@@ -1467,8 +1467,8 @@ class MiniGoParser ( Parser ):
             else:
                 return self.getToken(MiniGoParser.RSB, i)
 
-        def INIT(self):
-            return self.getToken(MiniGoParser.INIT, 0)
+        def EQUAL(self):
+            return self.getToken(MiniGoParser.EQUAL, 0)
 
         def arr_literal(self):
             return self.getTypedRuleContext(MiniGoParser.Arr_literalContext,0)
@@ -1514,7 +1514,7 @@ class MiniGoParser ( Parser ):
             _la = self._input.LA(1)
             if _la==34:
                 self.state = 234
-                self.match(MiniGoParser.INIT)
+                self.match(MiniGoParser.EQUAL)
                 self.state = 235
                 self.arr_literal()
 

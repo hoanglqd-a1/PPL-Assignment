@@ -50,13 +50,13 @@ lhs: expr6 ;
 assigning: lhs assign expr0 end_stm ;
 
 //* var declare statement */
-vardecl: VAR_ ID (data_type | data_type? INIT expr0) end_stm ;
+vardecl: VAR_ ID (data_type | data_type? EQUAL expr0) end_stm ;
 
 //* const */
-constdecl: CONST_ ID INIT expr0 end_stm ;
+constdecl: CONST_ ID EQUAL expr0 end_stm ;
 
 //* array */
-arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (INIT arr_literal)? end_stm ;
+arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (EQUAL arr_literal)? end_stm ;
 
 //* function. Note that we have not implemented function body yet */
 parameter: ID (data_type | ID) ;
@@ -153,7 +153,7 @@ BOOLEAN_OP: '&&' | '||' | '!' {self.lastTokenType = 'BOOLEAN_OP'};
 UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' {self.lastTokenType = 'UPT_ASSIGN'};
 ASSIGN: ':=' {self.lastTokenType = 'ASSIGN'};
 DOT: '.' {self.lastTokenType = 'DOT'};
-INIT: '=' {self.lastTokenType = 'INIT'};
+EQUAL: '=' {self.lastTokenType = 'EQUAL'};
 ADD: '+' {self.lastTokenType = 'ADD'};
 SUB: '-' {self.lastTokenType = 'SUB'};
 MUL: '*' {self.lastTokenType = 'MUL'};
