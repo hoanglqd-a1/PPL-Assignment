@@ -59,7 +59,7 @@ constdecl: CONST_ ID EQUAL expr0 end_stm ;
 arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (EQUAL arr_literal)? end_stm ;
 
 //* function. Note that we have not implemented function body yet */
-parameter: ID (data_type | ID) ;
+parameter: ID (',' ID)* (data_type | ID) ;
 parameterlst: parameter (COMMA parameter)* ;
 receiver: ID ID ;
 funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' blockcode '}' end_stm ;
@@ -69,8 +69,7 @@ fielddecl: ID (data_type ('[' expr0 ']')* | ID | INTERFACE_) end_stm ;
 structdecl: TYPE_ ID STRUCT_ '{' end_stm? fielddecl* '}' end_stm ;
 
 //* interface */
-method_para_list: ID data_type? (',' ID data_type?)* ;
-methoddecl: ID '(' method_para_list? ')' data_type? end_stm ;
+methoddecl: ID '(' parameterlst? ')' data_type? end_stm ;
 interfacedecl: TYPE_ ID INTERFACE_ '{' end_stm? methoddecl* '}' end_stm ;
 
 //* if statement */

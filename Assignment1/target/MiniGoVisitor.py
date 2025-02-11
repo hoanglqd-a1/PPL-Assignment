@@ -124,11 +124,6 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MiniGoParser#method_para_list.
-    def visitMethod_para_list(self, ctx:MiniGoParser.Method_para_listContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MiniGoParser#methoddecl.
     def visitMethoddecl(self, ctx:MiniGoParser.MethoddeclContext):
         return self.visitChildren(ctx)

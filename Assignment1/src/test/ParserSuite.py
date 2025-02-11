@@ -463,7 +463,7 @@ func main() {
         self.assertTrue(TestParser.checkParser(input,expect,282))
     def test_multipletest5(self):
         input = """type Calculator interface {
-    Add(x, y) int;
+    Add(x, y int) int;
     Subtract(a, b float, c int) float;
     Reset()
     SayHello(name string)
@@ -488,8 +488,8 @@ func main() {
         self.assertTrue(TestParser.checkParser(input,expect,283))
     def test_multipletest6(self):
         input = """type Calculator interface {
-    Add(x, y) int;
-    Subtract(a, b float, c int) float;
+    Add(x, y INTEGER) int;
+    Subtract(a, b OBJECT, c int) float;
     Reset()
     SayHello(name string)
 }
