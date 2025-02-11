@@ -113,7 +113,7 @@ class LexerSuite(unittest.TestCase):
         """test newline"""
         input = """abc = 10
         def = 20"""
-        expect = "abc,=,10,\n,def,=,20,<EOF>"
+        expect = "abc,=,10,;,def,=,20,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,137))
     def test_newline1(self):
         """test newline"""
@@ -129,7 +129,7 @@ class LexerSuite(unittest.TestCase):
         """test comment"""
         input = """// This is a comment
         This is not a comment"""
-        expect = "\n,This,is,not,a,comment,<EOF>"
+        expect = "This,is,not,a,comment,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,140))
     def test_comment2(self):
         """test comment"""
@@ -163,7 +163,7 @@ class LexerSuite(unittest.TestCase):
             } else {
             a = b;
             }"""
-        expect = "if,(,a,>,b,),{,\n,a,=,b,;,\n,},else,if,(,a,<,b,),{,\n,b,=,a,;,\n,},else,{,\n,a,=,b,;,\n,},<EOF>"
+        expect = "if,(,a,>,b,),{,a,=,b,;,},else,if,(,a,<,b,),{,b,=,a,;,},else,{,a,=,b,;,},<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,145))
     def test_ifelse1(self):
         """test ifelse"""
@@ -171,9 +171,9 @@ class LexerSuite(unittest.TestCase):
             a := b;
         }
         """
-        expect = "if,(,a,>,b,||,c,<,d,),{,\n,a,:=,b,;,\n,},\n,<EOF>"
+        expect = "if,(,a,>,b,||,c,<,d,),{,a,:=,b,;,},;,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,146))
-    def test_assign0(self):
+    def test_assignment6(self):
         """test assign"""
         input = """a *= 2; b -= 15.6 c /= \"asdasd\""""
         expect = "a,*=,2,;,b,-=,15.6,c,/=,\"asdasd\",<EOF>"
@@ -221,7 +221,7 @@ class LexerSuite(unittest.TestCase):
         input = """var x = 10;
         var str string = \"Tieng toi vang rung nui, sao khong ai tra loi
         """
-        expect = "var,x,=,10,;,\n,var,str,string,=,Unclosed string: Tieng toi vang rung nui, sao khong ai tra loi"
+        expect = "var,x,=,10,;,var,str,string,=,Unclosed string: Tieng toi vang rung nui, sao khong ai tra loi"
         self.assertTrue(TestLexer.checkLexeme(input,expect,157))
     def test_string9(self):
         input = """var x = \"Nhan tin theo cung gio \" khan con \"day doi nguoi"""
@@ -266,7 +266,7 @@ class LexerSuite(unittest.TestCase):
     def test_funcdecl0(self):
         input = """func main (xyz int) int {}
         """
-        expect = """func,main,(,xyz,int,),int,{,},\n,<EOF>"""
+        expect = """func,main,(,xyz,int,),int,{,},;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,168))
     def test_funcdecl1(self):
         input = """func main (xyz int, str string, f float, b boolean) float { };"""
@@ -287,7 +287,7 @@ class LexerSuite(unittest.TestCase):
     }
 }
         """
-        expect = "func,Fibonacci,(,n,int,),int,{,\n,if,(,n,==,0,),{,\n,return,0,\n,},else,if,(,n,==,1,),{,\n,return,1,\n,},else,{,\n,return,Fibonacci,(,n,-,1,),+,Fibonacci,(,n,-,2,),\n,},\n,},\n,<EOF>"
+        expect = "func,Fibonacci,(,n,int,),int,{,if,(,n,==,0,),{,return,0,;,},else,if,(,n,==,1,),{,return,1,;,},else,{,return,Fibonacci,(,n,-,1,),+,Fibonacci,(,n,-,2,),;,},;,},;,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,171))
     def test_assignment0(self):
         input = """a *= 2; b -= 15.6; c /= \"asdasd\";"""
@@ -300,21 +300,21 @@ class LexerSuite(unittest.TestCase):
     def test_structdecl0(self):
         input = """type A struct{ a int 
         }"""
-        expect = """type,A,struct,{,a,int,\n,},<EOF>"""
+        expect = """type,A,struct,{,a,int,;,},<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,174))
     def test_structdecl1(self):
         input = """type A struct { 
         a int
         c string
         }"""
-        expect = """type,A,struct,{,\n,a,int,\n,c,string,\n,},<EOF>"""
+        expect = """type,A,struct,{,a,int,;,c,string,;,},<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,175))
     def test_structdecl2(self):
         input = """type A struct { 
         if int; 
         else float ;}
         """
-        expect = """type,A,struct,{,\n,if,int,;,\n,else,float,;,},\n,<EOF>"""
+        expect = """type,A,struct,{,if,int,;,else,float,;,},;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,176))
     def test_interface0(self):
         input = """type A interface{ 
@@ -323,27 +323,27 @@ class LexerSuite(unittest.TestCase):
         C()
         D(a, b string)
         };"""
-        expect = """type,A,interface,{,\n,a,(,),int,;,\n,b,(,c,int,),float,;,\n,C,(,),\n,D,(,a,,,b,string,),\n,},;,<EOF>"""
+        expect = """type,A,interface,{,a,(,),int,;,b,(,c,int,),float,;,C,(,),;,D,(,a,,,b,string,),;,},;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,177))
     def test_interface1(self):
         input = """type A interface  { 
         function(a, b, c, d int, e, f string, g, h, i float, j, k, l, m, n boolean); func0() boolean
         };"""
-        expect = """type,A,interface,{,\n,function,(,a,,,b,,,c,,,d,int,,,e,,,f,string,,,g,,,h,,,i,float,,,j,,,k,,,l,,,m,,,n,boolean,),;,func0,(,),boolean,\n,},;,<EOF>"""
+        expect = """type,A,interface,{,function,(,a,,,b,,,c,,,d,int,,,e,,,f,string,,,g,,,h,,,i,float,,,j,,,k,,,l,,,m,,,n,boolean,),;,func0,(,),boolean,;,},;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,178))
-    def test_assign0(self):
+    def test_assignment2(self):
         input = """a[1][2][b(1)] %= n[2] * func0(1)"""
         expect = """a,[,1,],[,2,],[,b,(,1,),],%=,n,[,2,],*,func0,(,1,),<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,179))
-    def test_assign1(self):
+    def test_assignment3(self):
         input = """a[1][3] += 1.0 * 2 || true && false;"""
         expect = """a,[,1,],[,3,],+=,1.0,*,2,||,true,&&,false,;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,180))
-    def test_assign2(self):
+    def test_assignment4(self):
         input = """var a = \"string\" + \"string\" * 2 / 34;"""
         expect = """var,a,=,\"string\",+,\"string\",*,2,/,34,;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,181))
-    def test_assign3(self):
+    def test_assignment5(self):
         input = """const a = 2.0 * (4 * 0.5)"""
         expect = """const,a,=,2.0,*,(,4,*,0.5,),<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,182))
@@ -391,19 +391,19 @@ class LexerSuite(unittest.TestCase):
         input = """for i := 0; i < 10; i += 1 {
         }
         """
-        expect = "for,i,:=,0,;,i,<,10,;,i,+=,1,{,\n,},\n,<EOF>"
+        expect = "for,i,:=,0,;,i,<,10,;,i,+=,1,{,},;,<EOF>"
         self.assertTrue(TestLexer.checkLexeme(input,expect,193))
     def test_forloop1(self):
         input = """for index, value := range arr {
             a /= 100;
             b -= 20;
         }"""
-        expect = """for,index,,,value,:=,range,arr,{,\n,a,/=,100,;,\n,b,-=,20,;,\n,},<EOF>"""
+        expect = """for,index,,,value,:=,range,arr,{,a,/=,100,;,b,-=,20,;,},<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,194))
     def test_forloop2(self):
         input = """for i < 10; i:= 10; i += 2 {}
         """
-        expect = """for,i,<,10,;,i,:=,10,;,i,+=,2,{,},\n,<EOF>"""
+        expect = """for,i,<,10,;,i,:=,10,;,i,+=,2,{,},;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,195))
     def test_forloop3(self):
         input = """for index, value := range [3]int{1,2,3} {}"""
@@ -425,3 +425,15 @@ class LexerSuite(unittest.TestCase):
         input = """return 10; break; continue;"""
         expect = """return,10,;,break,;,continue,;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,200))
+    def test_newline2(self):
+        input = """break
+        """
+        expect = """break,;,<EOF>"""
+        self.assertTrue(TestLexer.checkLexeme(input,expect,2001))
+    def test_newline3(self):
+        input = """var
+        a int =
+        0b100101
+        """
+        expect = """var,a,int,=,0b100101,;,<EOF>"""
+        self.assertTrue(TestLexer.checkLexeme(input,expect,2002))

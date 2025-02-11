@@ -825,8 +825,16 @@ func main() {
         input = """a := foo := bar := 5;"""
         expect = """Error on line 1 col 10: :="""
         self.assertTrue(TestParser.checkParser(input,expect,299))
-    def test_arraydecl5(self):
-        input = """var arr [3]int = int{1,2,3};"""
-        expect = "Error on line 1 col 18: int"
+    def test_ifexpr7(self):
+        input = """if (A) {
+            a := b;
+        }
+        else {
+            a := b;
+        }
+        else {
+            a := b;
+        }"""
+        expect = "Error on line 7 col 9: else"
         self.assertTrue(TestParser.checkParser(input,expect,300))
     

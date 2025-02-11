@@ -6,6 +6,8 @@ from lexererr import *
 }
 
 @lexer::members {
+lastTokenType = None
+
 def emit(self):
     tk = self.type
     if tk == self.UNCLOSE_STRING:       
@@ -25,7 +27,7 @@ options{
 	language=Python3;
 }
 
-program: end_stm? decl+ EOF ;
+program: decl+ EOF ;
 
 decl: statement | funcdecl | structdecl | interfacedecl ;
 statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat | forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
@@ -106,77 +108,84 @@ struct_literal: ID '{' struct_para_lst? '}' ;
 primitive_data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 data_type: primitive_data_type | ID ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
-end_stm: (SEMICOLON | NL)+ | EOF;
+end_stm: SEMICOLON | EOF;
 
 //* comment */
 SINGLE_LINE_CMT: '//' ~[\n]* -> skip;
 MULTI_LINE_CMT: '/*' (MULTI_LINE_CMT | .)*? '*/'  -> skip;
 
-NL: '\n' ;
+NL: '\n' {
+if self.lastTokenType in ['ID', 'INTEGER', 'FLOAT', 'TRUE_', 'FALSE_', 'STRING', 'INT_', 'FLOAT_', 'BOOLEAN_', 'STRING_', 'RETURN_', 'CONTINUE_', 'BREAK_', 'RPAREN', 'RSB', 'RCB']:
+    self.text = ';'
+    self.type = self.SEMICOLON
+    self.lastTokenType = 'SEMICOLON'
+else:
+    self.skip()
+};
 
 WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
 
 /** Keywords */
-IF_: 'if' ;
-ELSE_: 'else' ;
-FOR_: 'for' ;
-RETURN_: 'return' ;
-FUNC_: 'func' ;
-TYPE_: 'type' ;
-STRUCT_: 'struct' ;
-INTERFACE_: 'interface' ;
-STRING_: 'string' ;
-INT_: 'int' ;
-FLOAT_: 'float' ;
-BOOLEAN_: 'boolean' ;
-CONST_: 'const' ;
-VAR_: 'var' ;
-CONTINUE_: 'continue' ;
-BREAK_: 'break' ;
-RANGE_: 'range' ;
-NIL_: 'nil' ;
-TRUE_: 'true' ;
-FALSE_: 'false' ;
+IF_: 'if' {self.lastTokenType = 'IF_'};
+ELSE_: 'else' {self.lastTokenType = 'ELSE_'};
+FOR_: 'for' {self.lastTokenType = 'FOR_'};
+RETURN_: 'return' {self.lastTokenType = 'RETURN_'};
+FUNC_: 'func' {self.lastTokenType = 'FUNC_'};
+TYPE_: 'type' {self.lastTokenType = 'TYPE_'};
+STRUCT_: 'struct' {self.lastTokenType = 'STRUCT_'};
+INTERFACE_: 'interface' {self.lastTokenType = 'INTERFACE_'};
+STRING_: 'string' {self.lastTokenType = 'STRING_'};
+INT_: 'int' {self.lastTokenType = 'INT_'};
+FLOAT_: 'float' {self.lastTokenType = 'FLOAT_'};
+BOOLEAN_: 'boolean' {self.lastTokenType = 'BOOLEAN_'};
+CONST_: 'const' {self.lastTokenType = 'CONST_'};
+VAR_: 'var' {self.lastTokenType = 'VAR_'};
+CONTINUE_: 'continue' {self.lastTokenType = 'CONTINUE_'};
+BREAK_: 'break' {self.lastTokenType = 'BREAK_'};
+RANGE_: 'range' {self.lastTokenType = 'RANGE_'};
+NIL_: 'nil' {self.lastTokenType = 'NIL_'};
+TRUE_: 'true' {self.lastTokenType = 'TRUE_'};
+FALSE_: 'false' {self.lastTokenType = 'FALSE_'};
 
 /** Operators */
-COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' ;
-BOOLEAN_OP: '&&' | '||' | '!' ;
-UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' ;
-ASSIGN: ':=' ;
-DOT: '.' ;
-INIT: '=' ;
-ADD: '+' ;
-SUB: '-' ;
-MUL: '*' ;
-DIV: '/' ;
-MOD: '%' ;
+COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' {self.lastTypeToken = 'COMPARISON_OP'};
+BOOLEAN_OP: '&&' | '||' | '!' {self.lastTokenType = 'BOOLEAN_OP'};
+UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' {self.lastTokenType = 'UPT_ASSIGN'};
+ASSIGN: ':=' {self.lastTokenType = 'ASSIGN'};
+DOT: '.' {self.lastTokenType = 'DOT'};
+INIT: '=' {self.lastTokenType = 'INIT'};
+ADD: '+' {self.lastTokenType = 'ADD'};
+SUB: '-' {self.lastTokenType = 'SUB'};
+MUL: '*' {self.lastTokenType = 'MUL'};
+DIV: '/' {self.lastTokenType = 'DIV'};
+MOD: '%' {self.lastTokenType = 'MOD'};
 
 /** Seperators */
-LPAREN: '(' ;
-RPAREN: ')' ;
-LSB: '[' ;
-RSB: ']' ;
-LCB: '{' ;
-RCB: '}' ;
-COMMA: ',' ;
-SEMICOLON: ';' ;
+LPAREN: '(' {self.lastTokenType = 'LPAREN'};
+RPAREN: ')' {self.lastTokenType = 'RPAREN'};
+LSB: '[' {self.lastTokenType = 'LSB'};
+RSB: ']' {self.lastTokenType = 'RSB'};
+LCB: '{' {self.lastTokenType = 'LCB'};
+RCB: '}' {self.lastTokenType = 'RCB'};
+COMMA: ',' {self.lastTokenType = 'COMMA'};
+SEMICOLON: ';' {self.lastTokenType = 'SEMICOLON'};
 
 /** Literals */
 fragment Digit: [0-9] ;
-FLOAT: Digit+ '.' (Digit+)? ([eE] [+-]? Digit+)? ;
+FLOAT: Digit+ '.' (Digit+)? ([eE] [+-]? Digit+)? {self.lastTokenType = 'FLOAT'};
 
 fragment DecInt: '0' | [1-9] [0-9]* ;
 fragment BinInt: '0' [bB] [01]+ ;
 fragment OctInt: '0' [oO] [0-7]+ ;
 fragment HexInt: '0' [xX] [0-9a-fA-F]+ ;
-INTEGER: DecInt | BinInt | OctInt | HexInt ;
+INTEGER: (DecInt | BinInt | OctInt | HexInt) {self.lastTokenType = 'INTEGER'};
 
 fragment Char: ~[\\"] ;
 fragment EscapeChar: '\\' [\\"rtn] ;
-STRING: '"' (Char | EscapeChar)* '"' ;
+STRING: '"' (Char | EscapeChar)* '"' {self.lastTokenType = 'STRING'};
 
-ID: [_A-Za-z] [_A-Za-z0-9]* ;
+ID: [_A-Za-z] [_A-Za-z0-9]* {self.lastTokenType = 'ID'};
 
-ERROR_CHAR: .;
-ILLEGAL_ESCAPE: '"' (Char | EscapeChar)* '\\' ~[\\"rtn] {self.text = self.text[1:]};
-UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.replace('\r','\n').split('\n')[0][1:]};
+ERROR_CHAR: . {self.lastTokenType = 'ERROR_CHAR'};
+ILLEGAL_ESCAPE: '"' (Char | EscapeChar)* '\\' ~[\\"rtn] {self.text = self.text[1:]} {self.lastTokenType = 'ILLEGAL_ESCAPE'};
+UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.replace('\r','\n').split('\n')[0][1:]} {self.lastTokenType = 'UNCLOSE_STRING'};
