@@ -1,6 +1,6 @@
-from MiniGoVisitor import MiniGoVisitor
-from MiniGoParser import MiniGoParser
-from AST import *
+from target.MiniGoVisitor import MiniGoVisitor
+from target.MiniGoParser import MiniGoParser
+from utils.AST import *
 
 class ASTGeneration(MiniGoVisitor):
     def visitProgram(self,ctx:MiniGoParser.ProgramContext):

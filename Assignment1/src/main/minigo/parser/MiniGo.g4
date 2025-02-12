@@ -27,26 +27,28 @@ options{
 	language=Python3;
 }
 
-program: decllst EOF ;
+program: decl_stmtlst EOF ;
 
-decllst: decl decllst | decl ;
-decl: statement 
-    | vardecl 
+decl_stmtlst: decl_stmt decl_stmtlst | decl_stmt ;
+
+decl_stmt: decl | stmt ;
+
+decl: vardecl
+    | arraydecl
+    | constdecl
     | funcdecl 
     | structdecl 
     | interfdecl 
     ;
-statement: assigning 
-        | vardecl 
-        | arraydecl 
-        | constdecl 
-        | ifelse_stat 
-        | forloop_stat 
-        | continue_stat 
-        | break_stat 
-        | funccall_stat 
-        | return_stat 
-        ;
+    
+stmt: assigning
+    | ifelse_stat
+    | forloop_stat
+    | continue_stat
+    | break_stat
+    | funccall_stat
+    | return_stat
+    ;
 
 //* expression */
 expr: expr OR expr1 | expr1;
@@ -134,8 +136,19 @@ funccall_stat: expr6 LP exprlst RP end_stm ;
 return_stat: RETURN_ end_stm | RETURN_ expr end_stm;
 
 assign: UPT_ASSIGN | ASSIGN ;
-blockcode: LCB stmtlst RCB ;
-stmtlst: statement stmtlst | ;
+blockcode: LCB blockcodestmtlst RCB ;
+blockcodestmtlst: blockcodestmt blockcodestmtlst | ;
+blockcodestmt: assigning 
+        | vardecl 
+        | arraydecl 
+        | constdecl 
+        | ifelse_stat 
+        | forloop_stat 
+        | continue_stat 
+        | break_stat 
+        | funccall_stat 
+        | return_stat 
+        ;
 arr_literal: arridxlst data_type arrelemlst ;
 arrelemlst: LCB arreleml RCB ;
 arreleml: arrelem COMMA arreleml | arrelem ;

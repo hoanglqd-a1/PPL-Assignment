@@ -78,7 +78,7 @@ def serializedATN():
         0,122,583,1,0,0,0,124,585,1,0,0,0,126,127,3,2,1,0,127,128,5,0,0,
         1,128,1,1,0,0,0,129,130,3,4,2,0,130,131,3,2,1,0,131,134,1,0,0,0,
         132,134,3,4,2,0,133,129,1,0,0,0,133,132,1,0,0,0,134,3,1,0,0,0,135,
-        140,3,32,16,0,136,140,3,42,21,0,137,140,3,56,28,0,138,140,3,64,32,
+        140,3,30,15,0,136,140,3,42,21,0,137,140,3,56,28,0,138,140,3,64,32,
         0,139,135,1,0,0,0,139,136,1,0,0,0,139,137,1,0,0,0,139,138,1,0,0,
         0,140,5,1,0,0,0,141,152,3,30,15,0,142,152,3,32,16,0,143,152,3,36,
         18,0,144,152,3,34,17,0,145,152,3,72,36,0,146,152,3,84,42,0,147,152,
@@ -489,8 +489,8 @@ class MiniGoParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def vardecl(self):
-            return self.getTypedRuleContext(MiniGoParser.VardeclContext,0)
+        def assigning(self):
+            return self.getTypedRuleContext(MiniGoParser.AssigningContext,0)
 
 
         def funcdecl(self):
@@ -522,7 +522,7 @@ class MiniGoParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 135
-                self.vardecl()
+                self.assigning()
                 pass
 
             elif la_ == 2:
