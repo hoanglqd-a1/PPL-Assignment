@@ -57,40 +57,40 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme("\"Sample\"\"","\"Sample\",ErrorToken \"",118))
     def test_string4(self):
         """test string"""
-        self.assertTrue(TestLexer.checkLexeme("\"Sample\\\"","Unclosed string: Sample\\\"",119))
+        self.assertTrue(TestLexer.checkLexeme("\"Sample\\\"","Unclosed string: \"Sample\\\"",119))
     def test_illegal_escape(self):
         """test illegal escape"""
-        self.assertTrue(TestLexer.checkLexeme("\"Sample\\a\"","Illegal escape in string: Sample\\a",120))
+        self.assertTrue(TestLexer.checkLexeme("\"Sample\\a\"","Illegal escape in string: \"Sample\\a",120))
     def test_illegal_escape1(self):
         """test illegal escape"""
-        self.assertTrue(TestLexer.checkLexeme("\"This is a \\b sentence\"", "Illegal escape in string: This is a \\b",121))
+        self.assertTrue(TestLexer.checkLexeme("\"This is a \\b sentence\"", "Illegal escape in string: \"This is a \\b",121))
     def test_illegal_escape2(self):
         """test illegal escape"""
-        self.assertTrue(TestLexer.checkLexeme("\"This is \\n \\\" a sentence\" 0x123ADB \"This is anoth\\rer sen\\ltence\"", "\"This is \\n \\\" a sentence\",0x123ADB,Illegal escape in string: This is anoth\\rer sen\\l",122))
+        self.assertTrue(TestLexer.checkLexeme("\"This is \\n \\\" a sentence\" 0x123ADB \"This is anoth\\rer sen\\ltence\"", "\"This is \\n \\\" a sentence\",0x123ADB,Illegal escape in string: \"This is anoth\\rer sen\\l",122))
     def test_illegal_escape3(self):
         """test illegal escape"""
-        self.assertTrue(TestLexer.checkLexeme("\"\\q \\l \\r\"", "Illegal escape in string: \\q",123))
+        self.assertTrue(TestLexer.checkLexeme("\"\\q \\l \\r\"", "Illegal escape in string: \"\\q",123))
     def test_illegal_escape4(self):
         """test illegal escape"""
-        self.assertTrue(TestLexer.checkLexeme("\" \\r \\n \\~", "Illegal escape in string:  \\r \\n \\~",124))
+        self.assertTrue(TestLexer.checkLexeme("\" \\r \\n \\~", "Illegal escape in string: \" \\r \\n \\~",124))
     def test_unclosed_string0(self):
         """test unclosed string"""
-        self.assertTrue(TestLexer.checkLexeme("\"This is an unclosed string", "Unclosed string: This is an unclosed string", 125))
+        self.assertTrue(TestLexer.checkLexeme("\"This is an unclosed string", "Unclosed string: \"This is an unclosed string", 125))
     def test_unclosed_string1(self):
         """test unclosed string"""
-        self.assertTrue(TestLexer.checkLexeme("\"asdasd \\n \" func \"asdasd \\t", "\"asdasd \\n \",func,Unclosed string: asdasd \\t", 126))
+        self.assertTrue(TestLexer.checkLexeme("\"asdasd \\n \" func \"asdasd \\t", "\"asdasd \\n \",func,Unclosed string: \"asdasd \\t", 126))
     def test_unclosed_string2(self):
         """test unclosed string"""
         self.assertTrue(TestLexer.checkLexeme("\"", "ErrorToken \"", 127))
     def test_unclosed_string3(self):
         """test unclosed string"""
-        self.assertTrue(TestLexer.checkLexeme("\"asd\"asdasd\"ajsdlajsd", "\"asd\",asdasd,Unclosed string: ajsdlajsd", 128))
+        self.assertTrue(TestLexer.checkLexeme("\"asd\"asdasd\"ajsdlajsd", "\"asd\",asdasd,Unclosed string: \"ajsdlajsd", 128))
     def test_unclosed_string4(self):
         """test unclosed string"""
-        self.assertTrue(TestLexer.checkLexeme("\"if else [", "Unclosed string: if else [", 129))
+        self.assertTrue(TestLexer.checkLexeme("\"if else [", "Unclosed string: \"if else [", 129))
     def test_unclosed_string5(self):
         """test unclosed string"""
-        self.assertTrue(TestLexer.checkLexeme("\"if else \\n if else", "Unclosed string: if else \\n if else", 130))
+        self.assertTrue(TestLexer.checkLexeme("\"if else \\n if else", "Unclosed string: \"if else \\n if else", 130))
     def test_identifier0(self):
         """test identifier"""
         self.assertTrue(TestLexer.checkLexeme("abcABC[ 098xdef }","abcABC,[,0,98,xdef,},<EOF>",131))
@@ -206,7 +206,7 @@ class LexerSuite(unittest.TestCase):
         self.assertTrue(TestLexer.checkLexeme(input,expect,153))
     def test_string5(self):
         input = """\"asdasd\\g \\h \\l \\n \\r \\t \\\" \\\" \\\" \\\" \\\""""
-        expect = "Illegal escape in string: asdasd\\g"
+        expect = "Illegal escape in string: \"asdasd\\g"
         self.assertTrue(TestLexer.checkLexeme(input,expect,154))
     def test_string6(self):
         input = """\"asdasd\" \\l"""
@@ -215,17 +215,17 @@ class LexerSuite(unittest.TestCase):
     def test_string7(self):
         input = """\"Va bau troi dem ngan sao toa sang
         var x int = 10;"""
-        expect = "Unclosed string: Va bau troi dem ngan sao toa sang"
+        expect = "Unclosed string: \"Va bau troi dem ngan sao toa sang"
         self.assertTrue(TestLexer.checkLexeme(input,expect,156))
     def test_string8(self):
         input = """var x = 10;
         var str string = \"Tieng toi vang rung nui, sao khong ai tra loi
         """
-        expect = "var,x,=,10,;,var,str,string,=,Unclosed string: Tieng toi vang rung nui, sao khong ai tra loi"
+        expect = "var,x,=,10,;,var,str,string,=,Unclosed string: \"Tieng toi vang rung nui, sao khong ai tra loi"
         self.assertTrue(TestLexer.checkLexeme(input,expect,157))
     def test_string9(self):
         input = """var x = \"Nhan tin theo cung gio \" khan con \"day doi nguoi"""
-        expect = "var,x,=,\"Nhan tin theo cung gio \",khan,con,Unclosed string: day doi nguoi"
+        expect = "var,x,=,\"Nhan tin theo cung gio \",khan,con,Unclosed string: \"day doi nguoi"
         self.assertTrue(TestLexer.checkLexeme(input,expect,158))
     def test_floating_point6(self):
         input = """09e101"""

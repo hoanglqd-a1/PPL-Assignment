@@ -14,6 +14,7 @@ class ASTGeneration(MiniGoVisitor):
     	
     def visitVardecl(self,ctx:MiniGoParser.VardeclContext):
         return VarDecl(ctx.ID().getText(),IntType(),None)
+    
 
     
 

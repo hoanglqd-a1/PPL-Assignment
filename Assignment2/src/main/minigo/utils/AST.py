@@ -446,9 +446,3 @@ class NilLiteral(Literal):
 
     def accept(self, v, param):
         return v.visitNilLiteral(self, param)
-
-
-
-
-
-

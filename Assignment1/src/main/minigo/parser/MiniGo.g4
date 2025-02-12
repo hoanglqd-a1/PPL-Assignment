@@ -42,18 +42,18 @@ decl: vardecl
     ;
     
 stmt: assigning
-    | ifelse_stat
-    | forloop_stat
-    | continue_stat
-    | break_stat
-    | funccall_stat
-    | return_stat
+    | ifelsestmt
+    | forloopstmt
+    | continuestmt
+    | breakstmt
+    | funccallstmt
+    | returnstmt
     ;
 
 //* expression */
 expr: expr OR expr1 | expr1;
 expr1: expr1 AND expr2 | expr2 ;
-expr2: expr2 COMPARISON_OP expr3 | expr3 ;
+expr2: expr2 compare_op expr3 | expr3 ;
 expr3: expr3 ADD expr4 | expr3 SUB expr4 | expr4 ;
 expr4: expr4 MUL expr5 | expr4 DIV expr5 | expr4 MOD expr5 | expr5 ;
 expr5: NOT expr6 | SUB expr6 | expr6;
@@ -62,11 +62,11 @@ expr7: LP expr RP | ID | literal ;
 exprlst: exprlstprime | ;
 exprlstprime: expr COMMA exprlstprime | expr ;
 
-//* left hand side */
-lhs: lhs DOT ID | lhs LSB expr RSB | ID ;
-
 //* assigning value statement */
 assigning: lhs assign expr end_stm ;
+
+//* left hand side */
+lhs: lhs DOT ID | lhs LSB expr RSB | ID ;
 
 //* var declare statement */
 vardecl: VAR_ ID data_type end_stm 
@@ -89,8 +89,8 @@ funcparam: LP paramlst RP ;
 paramlst: paramlstprime | ;
 paramlstprime: param COMMA paramlstprime | param ;
 param: idlst data_type ;
-receiver: LP ID ID RP;
 idlst: ID COMMA idlst | ID ;
+receiver: LP ID ID RP;
 
 
 //* struct */
@@ -109,7 +109,7 @@ interfmethlst: interfmethmem interfmethlst | ;
 interfmethmem: ID funcparam data_type? end_stm ;
 
 //* if statement */
-ifelse_stat: if_ elseif_lst else_ end_stm;
+ifelsestmt: if_ elseif_lst else_ end_stm;
 if_: IF_ condition blockcode end_stm? ;
 elseif_: ELSE_ IF_ condition blockcode end_stm? ;
 elseif_lst: elseif_ elseif_lst | ;
@@ -117,37 +117,37 @@ else_: ELSE_ blockcode | ;
 condition: LP expr RP ;
 
 //* for statement */
-forloop_stat: FOR_ expr blockcode end_stm
-            | FOR_ ID ASSIGN expr SEMICOLON expr SEMICOLON ID UPT_ASSIGN expr blockcode end_stm
+forloopstmt: FOR_ expr blockcode end_stm
+            | FOR_ ID ASSIGN expr SEMICOLON expr SEMICOLON ID uptassign expr blockcode end_stm
             | FOR_ ID COMMA ID ASSIGN RANGE_ id__arr blockcode end_stm
             ;
 id__arr: ID | arr_literal ;
 
 //* break statement */
-break_stat: BREAK_ end_stm;
+breakstmt: BREAK_ end_stm;
 
 //* continue statement */
-continue_stat: CONTINUE_ end_stm;
+continuestmt: CONTINUE_ end_stm;
 
 //* call statement */
-funccall_stat: expr6 LP exprlst RP end_stm ;
+funccallstmt: expr6 LP exprlst RP end_stm ;
 
 //* return statement */
-return_stat: RETURN_ end_stm | RETURN_ expr end_stm;
+returnstmt: RETURN_ end_stm | RETURN_ expr end_stm;
 
-assign: UPT_ASSIGN | ASSIGN ;
+assign: uptassign | ASSIGN ;
 blockcode: LCB blockcodestmtlst RCB ;
 blockcodestmtlst: blockcodestmt blockcodestmtlst | ;
 blockcodestmt: assigning 
         | vardecl 
         | arraydecl 
         | constdecl 
-        | ifelse_stat 
-        | forloop_stat 
-        | continue_stat 
-        | break_stat 
-        | funccall_stat 
-        | return_stat 
+        | ifelsestmt 
+        | forloopstmt 
+        | continuestmt 
+        | breakstmt 
+        | funccallstmt 
+        | returnstmt 
         ;
 arr_literal: arridxlst data_type arrelemlst ;
 arrelemlst: LCB arreleml RCB ;
@@ -160,6 +160,8 @@ structparam: ID COLON literal ;
 data_type: primitive_datatype | ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
+uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
+compare_op: EQCOM | DIFFCOM | LESSCOM | LEQCOM | GRECOM | GEQCOM ;
 end_stm: SEMICOLON | EOF;
 
 //* comment */
@@ -175,55 +177,64 @@ else:
     self.skip()
 };
 
-WS : [ \t\r]+ -> skip ; // skip spaces, tabs 
+WS : [ \t\r\f]+ -> skip ; // skip spaces, tabs 
 
 /** Keywords */
-IF_: 'if' {self.lastTokenType = 'IF_'};
-ELSE_: 'else' {self.lastTokenType = 'ELSE_'};
-FOR_: 'for' {self.lastTokenType = 'FOR_'};
-RETURN_: 'return' {self.lastTokenType = 'RETURN_'};
-FUNC_: 'func' {self.lastTokenType = 'FUNC_'};
-TYPE_: 'type' {self.lastTokenType = 'TYPE_'};
-STRUCT_: 'struct' {self.lastTokenType = 'STRUCT_'};
-INTERFACE_: 'interface' {self.lastTokenType = 'INTERFACE_'};
-STRING_: 'string' {self.lastTokenType = 'STRING_'};
-INT_: 'int' {self.lastTokenType = 'INT_'};
-FLOAT_: 'float' {self.lastTokenType = 'FLOAT_'};
-BOOLEAN_: 'boolean' {self.lastTokenType = 'BOOLEAN_'};
-CONST_: 'const' {self.lastTokenType = 'CONST_'};
-VAR_: 'var' {self.lastTokenType = 'VAR_'};
-CONTINUE_: 'continue' {self.lastTokenType = 'CONTINUE_'};
-BREAK_: 'break' {self.lastTokenType = 'BREAK_'};
-RANGE_: 'range' {self.lastTokenType = 'RANGE_'};
-NIL_: 'nil' {self.lastTokenType = 'NIL_'};
-TRUE_: 'true' {self.lastTokenType = 'TRUE_'};
-FALSE_: 'false' {self.lastTokenType = 'FALSE_'};
+IF_         : 'if' {self.lastTokenType = 'IF_'};
+ELSE_       : 'else' {self.lastTokenType = 'ELSE_'};
+FOR_        : 'for' {self.lastTokenType = 'FOR_'};
+RETURN_     : 'return' {self.lastTokenType = 'RETURN_'};
+FUNC_       : 'func' {self.lastTokenType = 'FUNC_'};
+TYPE_       : 'type' {self.lastTokenType = 'TYPE_'};
+STRUCT_     : 'struct' {self.lastTokenType = 'STRUCT_'};
+INTERFACE_  : 'interface' {self.lastTokenType = 'INTERFACE_'};
+STRING_     : 'string' {self.lastTokenType = 'STRING_'};
+INT_        : 'int' {self.lastTokenType = 'INT_'};
+FLOAT_      : 'float' {self.lastTokenType = 'FLOAT_'};
+BOOLEAN_    : 'boolean' {self.lastTokenType = 'BOOLEAN_'};
+CONST_      : 'const' {self.lastTokenType = 'CONST_'};
+VAR_        : 'var' {self.lastTokenType = 'VAR_'};
+CONTINUE_   : 'continue' {self.lastTokenType = 'CONTINUE_'};
+BREAK_      : 'break' {self.lastTokenType = 'BREAK_'};
+RANGE_      : 'range' {self.lastTokenType = 'RANGE_'};
+NIL_        : 'nil' {self.lastTokenType = 'NIL_'};
+TRUE_       : 'true' {self.lastTokenType = 'TRUE_'};
+FALSE_      : 'false' {self.lastTokenType = 'FALSE_'};
 
 /** Operators */
-COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' {self.lastTypeToken = 'COMPARISON_OP'};
-AND: '&&' {self.lastTypeToken = 'AND'};
-OR: '||' {self.lastTypeToken = 'OR'};
-NOT: '!' {self.lastTypeToken = 'NOT'};
-UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' {self.lastTokenType = 'UPT_ASSIGN'};
-ASSIGN: ':=' {self.lastTokenType = 'ASSIGN'};
-DOT: '.' {self.lastTokenType = 'DOT'};
-EQUAL: '=' {self.lastTokenType = 'EQUAL'};
-ADD: '+' {self.lastTokenType = 'ADD'};
-SUB: '-' {self.lastTokenType = 'SUB'};
-MUL: '*' {self.lastTokenType = 'MUL'};
-DIV: '/' {self.lastTokenType = 'DIV'};
-MOD: '%' {self.lastTokenType = 'MOD'};
+EQCOM   : '==' {self.lastTokenType = 'EQCOM'};
+DIFFCOM : '!=' {self.lastTokenType = 'DIFFCOM'};
+LESSCOM : '<' {self.lastTokenType = 'LESSCOM'};
+LEQCOM  : '<=' {self.lastTokenType = 'LEQCOM'};
+GRECOM  : '>' {self.lastTokenType = 'GRECOM'};
+GEQCOM  : '>=' {self.lastTokenType = 'GEQCOM'};
+AND     : '&&' {self.lastTokenType = 'AND'};
+OR      : '||' {self.lastTokenType = 'OR'};
+NOT     : '!' {self.lastTokenType = 'NOT'};
+ADDASSIGN   : '+=' {self.lastTokenType = 'ADDASSIGN'};
+SUBASSIGN   : '-=' {self.lastTokenType = 'SUBASSIGN'};
+MULASSIGN   : '*=' {self.lastTokenType = 'MULASSIGN'};
+DIVASSIGN   : '/=' {self.lastTokenType = 'DIVASSIGN'};
+MODASSIGN   : '%=' {self.lastTokenType = 'MODASSIGN'};
+ASSIGN      : ':=' {self.lastTokenType = 'ASSIGN'};
+DOT     : '.' {self.lastTokenType = 'DOT'};
+EQUAL   : '=' {self.lastTokenType = 'EQUAL'};
+ADD     : '+' {self.lastTokenType = 'ADD'};
+SUB     : '-' {self.lastTokenType = 'SUB'};
+MUL     : '*' {self.lastTokenType = 'MUL'};
+DIV     : '/' {self.lastTokenType = 'DIV'};
+MOD     : '%' {self.lastTokenType = 'MOD'};
 
 /** Seperators */
-LP: '(' {self.lastTokenType = 'LP'};
-RP: ')' {self.lastTokenType = 'RP'};
-LSB: '[' {self.lastTokenType = 'LSB'};
-RSB: ']' {self.lastTokenType = 'RSB'};
-LCB: '{' {self.lastTokenType = 'LCB'};
-RCB: '}' {self.lastTokenType = 'RCB'};
-COMMA: ',' {self.lastTokenType = 'COMMA'};
-SEMICOLON: ';' {self.lastTokenType = 'SEMICOLON'};
-COLON: ':' {self.lastTokenType = 'COLON'};
+LP  : '(' {self.lastTokenType = 'LP'};
+RP  : ')' {self.lastTokenType = 'RP'};
+LSB : '[' {self.lastTokenType = 'LSB'};
+RSB : ']' {self.lastTokenType = 'RSB'};
+LCB : '{' {self.lastTokenType = 'LCB'};
+RCB : '}' {self.lastTokenType = 'RCB'};
+COMMA       : ',' {self.lastTokenType = 'COMMA'};
+SEMICOLON   : ';' {self.lastTokenType = 'SEMICOLON'};
+COLON       : ':' {self.lastTokenType = 'COLON'};
 
 /** Literals */
 fragment Digit: [0-9] ;
@@ -242,5 +253,5 @@ STRING: '"' (Char | EscapeChar)* '"' {self.lastTokenType = 'STRING'};
 ID: [_A-Za-z] [_A-Za-z0-9]* {self.lastTokenType = 'ID'};
 
 ERROR_CHAR: . {self.lastTokenType = 'ERROR_CHAR'};
-ILLEGAL_ESCAPE: '"' (Char | EscapeChar)* '\\' ~[\\"rtn] {self.text = self.text[1:]} {self.lastTokenType = 'ILLEGAL_ESCAPE'};
-UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.replace('\r','\n').split('\n')[0][1:]} {self.lastTokenType = 'UNCLOSE_STRING'};
+ILLEGAL_ESCAPE: '"' (Char | EscapeChar)* '\\' ~[\\"rtn] {self.lastTokenType = 'ILLEGAL_ESCAPE'};
+UNCLOSE_STRING: '"' (Char | EscapeChar)* {self.text = self.text.replace('\r','\n').split('\n')[0]} {self.lastTokenType = 'UNCLOSE_STRING'};

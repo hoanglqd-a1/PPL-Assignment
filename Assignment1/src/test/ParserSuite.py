@@ -837,4 +837,7 @@ func main() {
         }"""
         expect = "Error on line 7 col 9: else"
         self.assertTrue(TestParser.checkParser(input,expect,300))
-    
+    def test_zzz(self):
+        input = """const a = a.2"""
+        expect = "Error on line 1 col 13: 2"
+        self.assertTrue(TestParser.checkParser(input,expect,301))
