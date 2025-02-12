@@ -30,7 +30,8 @@ options{
 program: decllst EOF ;
 
 decllst: decl decllst | decl ;
-decl: vardecl 
+decl: statement 
+    | vardecl 
     | funcdecl 
     | structdecl 
     | interfdecl 
