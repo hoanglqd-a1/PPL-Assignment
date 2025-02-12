@@ -27,62 +27,98 @@ options{
 	language=Python3;
 }
 
-program: decl+ EOF ;
+program: decllst EOF ;
 
-decl: statement | funcdecl | structdecl | interfacedecl ;
-statement: assigning | vardecl | arraydecl | constdecl | ifelse_stat | forloop_stat | continue_stat | break_stat | funccall_stat | return_stat ;
+decllst: decl decllst | decl ;
+decl: vardecl 
+    | funcdecl 
+    | structdecl 
+    | interfdecl 
+    ;
+statement: assigning 
+        | vardecl 
+        | arraydecl 
+        | constdecl 
+        | ifelse_stat 
+        | forloop_stat 
+        | continue_stat 
+        | break_stat 
+        | funccall_stat 
+        | return_stat 
+        ;
 
 //* expression */
-expr0: expr1 ('||' expr1)* ;
-expr1: expr2 ('&&' expr2)* ;
-expr2: expr3 (COMPARISON_OP expr3)* ;
-expr3: expr4 ((ADD | SUB) expr4)* ;
-expr4: expr5 ((MUL | DIV | MOD) expr5)* ;
-expr5: ('-' | '!')? expr6 ;
-expr6: expr7 ('.' ID | '[' expr0 ']' | '(' expr_list ')')* ;
-expr7: '(' expr0 ')' | ID | literal ;
-expr_list: (expr0 (',' expr0)*)? ;
+expr: expr OR expr1 | expr1;
+expr1: expr1 AND expr2 | expr2 ;
+expr2: expr2 COMPARISON_OP expr3 | expr3 ;
+expr3: expr3 ADD expr4 | expr3 SUB expr4 | expr4 ;
+expr4: expr4 MUL expr5 | expr4 DIV expr5 | expr4 MOD expr5 | expr5 ;
+expr5: NOT expr6 | SUB expr6 | expr6;
+expr6: expr6 DOT ID | expr6 LSB expr RSB | expr6 LP exprlst RP | expr7 ;
+expr7: LP expr RP | ID | literal ;
+exprlst: exprlstprime | ;
+exprlstprime: expr COMMA exprlstprime | expr ;
 
 //* left hand side */
-lhs: expr6 ;
+lhs: lhs DOT ID | lhs LSB expr RSB | ID ;
 
 //* assigning value statement */
-assigning: lhs assign expr0 end_stm ;
+assigning: lhs assign expr end_stm ;
 
 //* var declare statement */
-vardecl: VAR_ ID (data_type | data_type? EQUAL expr0) end_stm ;
+vardecl: VAR_ ID data_type end_stm 
+        | VAR_ ID EQUAL expr end_stm 
+        | VAR_ ID data_type EQUAL expr end_stm
+        ;
 
 //* const */
-constdecl: CONST_ ID EQUAL expr0 end_stm ;
+constdecl: CONST_ ID EQUAL expr end_stm ;
 
 //* array */
-arraydecl: VAR_ ID ('[' expr0 ']')+ data_type (EQUAL arr_literal)? end_stm ;
+arraydecl: VAR_ ID arridxlst data_type end_stm 
+        | VAR_ ID arridxlst data_type EQUAL arr_literal end_stm ;
+arridxlst: arridx arridxlst | arridx ;
+arridx: LSB expr RSB ;
 
 //* function. Note that we have not implemented function body yet */
-parameter: ID (',' ID)* (data_type | ID) ;
-parameterlst: parameter (COMMA parameter)* ;
-receiver: ID ID ;
-funcdecl: FUNC_ ('('receiver')')? ID '(' parameterlst? ')' data_type? '{' blockcode '}' end_stm ;
+funcdecl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
+funcparam: LP paramlst RP ;
+paramlst: paramlstprime | ;
+paramlstprime: param COMMA paramlstprime | param ;
+param: idlst data_type ;
+receiver: LP ID ID RP;
+idlst: ID COMMA idlst | ID ;
+
 
 //* struct */
-fielddecl: ID (data_type ('[' expr0 ']')* | ID | INTERFACE_) end_stm ;
-structdecl: TYPE_ ID STRUCT_ '{' end_stm? fielddecl* '}' end_stm ;
+structdecl: TYPE_ ID STRUCT_ structfield end_stm ;
+structfield: LCB fielddecllst RCB ;
+fielddecllst: fielddecl fielddecllst | ;
+fielddecl: ID data_type arridxlst? end_stm
+        | ID ID end_stm
+        | ID INTERFACE_ end_stm
+        ;
 
 //* interface */
-methoddecl: ID '(' parameterlst? ')' data_type? end_stm ;
-interfacedecl: TYPE_ ID INTERFACE_ '{' end_stm? methoddecl* '}' end_stm ;
+interfdecl: TYPE_ ID INTERFACE_ interfmeth end_stm ;
+interfmeth: LCB interfmethlst RCB ;
+interfmethlst: interfmethmem interfmethlst | ;
+interfmethmem: ID funcparam data_type? end_stm ;
 
 //* if statement */
-if_: IF_ '(' expr0 ')' '{' blockcode '}' end_stm? ;
-elseif_: ELSE_ IF_ '(' expr0 ')' '{' blockcode '}' end_stm? ;
-else_: ELSE_ '{' blockcode '}' ;
-ifelse_stat: if_ elseif_* else_? end_stm;
+ifelse_stat: if_ elseif_lst else_ end_stm;
+if_: IF_ condition blockcode end_stm? ;
+elseif_: ELSE_ IF_ condition blockcode end_stm? ;
+elseif_lst: elseif_ elseif_lst | ;
+else_: ELSE_ blockcode | ;
+condition: LP expr RP ;
 
 //* for statement */
-forloop_stat: FOR_  ( expr0
-                    | ID ASSIGN expr0 ';' expr0 ';' ID UPT_ASSIGN expr0
-                    | ID ',' ID ASSIGN RANGE_ (ID | arr_literal)
-                    ) '{' blockcode '}' end_stm ;
+forloop_stat: FOR_ expr blockcode end_stm
+            | FOR_ ID ASSIGN expr SEMICOLON expr SEMICOLON ID UPT_ASSIGN expr blockcode end_stm
+            | FOR_ ID COMMA ID ASSIGN RANGE_ id__arr blockcode end_stm
+            ;
+id__arr: ID | arr_literal ;
 
 //* break statement */
 break_stat: BREAK_ end_stm;
@@ -91,21 +127,24 @@ break_stat: BREAK_ end_stm;
 continue_stat: CONTINUE_ end_stm;
 
 //* call statement */
-funccall_stat: expr6 '(' expr_list ')' end_stm ;
+funccall_stat: expr6 LP exprlst RP end_stm ;
 
 //* return statement */
-return_stat: RETURN_ expr0? end_stm ;
+return_stat: RETURN_ end_stm | RETURN_ expr end_stm;
 
 assign: UPT_ASSIGN | ASSIGN ;
-blockcode: end_stm? statement* ;
-arr_elem: expr0 | arr_elem_list ;
-arr_elem_list: '{' (arr_elem (',' arr_elem)*)? '}' ;
-arr_literal: ('[' expr0 ']')+ data_type arr_elem_list ;
-struct_para: ID ':' literal ;
-struct_para_lst: struct_para (',' struct_para)*;
-struct_literal: ID '{' struct_para_lst? '}' ;
-primitive_data_type: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
-data_type: primitive_data_type | ID ;
+blockcode: LCB stmtlst RCB ;
+stmtlst: statement stmtlst | ;
+arr_literal: arridxlst data_type arrelemlst ;
+arrelemlst: LCB arreleml RCB ;
+arreleml: arrelem COMMA arreleml | arrelem ;
+arrelem: expr | arrelemlst ;
+struct_literal: ID LCB structparamlst RCB ;
+structparamlst: structparamlstprime | ;
+structparamlstprime: structparam COMMA structparamlstprime | structparam ;
+structparam: ID COLON literal ;
+data_type: primitive_datatype | ID ;
+primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
 end_stm: SEMICOLON | EOF;
 
@@ -113,8 +152,8 @@ end_stm: SEMICOLON | EOF;
 SINGLE_LINE_CMT: '//' ~[\n]* -> skip;
 MULTI_LINE_CMT: '/*' (MULTI_LINE_CMT | .)*? '*/'  -> skip;
 
-NL: '\n' {
-if self.lastTokenType in ['ID', 'INTEGER', 'FLOAT', 'TRUE_', 'FALSE_', 'STRING', 'INT_', 'FLOAT_', 'BOOLEAN_', 'STRING_', 'RETURN_', 'CONTINUE_', 'BREAK_', 'RPAREN', 'RSB', 'RCB']:
+NL: '\r'? '\n' {
+if self.lastTokenType in ['ID', 'INTEGER', 'FLOAT', 'TRUE_', 'FALSE_', 'STRING', 'INT_', 'FLOAT_', 'BOOLEAN_', 'STRING_', 'RETURN_', 'CONTINUE_', 'BREAK_', 'RP', 'RSB', 'RCB']:
     self.text = ';'
     self.type = self.SEMICOLON
     self.lastTokenType = 'SEMICOLON'
@@ -148,7 +187,9 @@ FALSE_: 'false' {self.lastTokenType = 'FALSE_'};
 
 /** Operators */
 COMPARISON_OP: '==' | '!=' | '<' | '<=' | '>' | '>=' {self.lastTypeToken = 'COMPARISON_OP'};
-BOOLEAN_OP: '&&' | '||' | '!' {self.lastTokenType = 'BOOLEAN_OP'};
+AND: '&&' {self.lastTypeToken = 'AND'};
+OR: '||' {self.lastTypeToken = 'OR'};
+NOT: '!' {self.lastTypeToken = 'NOT'};
 UPT_ASSIGN: '+=' | '-=' | '*=' | '/=' | '%=' {self.lastTokenType = 'UPT_ASSIGN'};
 ASSIGN: ':=' {self.lastTokenType = 'ASSIGN'};
 DOT: '.' {self.lastTokenType = 'DOT'};
@@ -160,14 +201,15 @@ DIV: '/' {self.lastTokenType = 'DIV'};
 MOD: '%' {self.lastTokenType = 'MOD'};
 
 /** Seperators */
-LPAREN: '(' {self.lastTokenType = 'LPAREN'};
-RPAREN: ')' {self.lastTokenType = 'RPAREN'};
+LP: '(' {self.lastTokenType = 'LP'};
+RP: ')' {self.lastTokenType = 'RP'};
 LSB: '[' {self.lastTokenType = 'LSB'};
 RSB: ']' {self.lastTokenType = 'RSB'};
 LCB: '{' {self.lastTokenType = 'LCB'};
 RCB: '}' {self.lastTokenType = 'RCB'};
 COMMA: ',' {self.lastTokenType = 'COMMA'};
 SEMICOLON: ';' {self.lastTokenType = 'SEMICOLON'};
+COLON: ':' {self.lastTokenType = 'COLON'};
 
 /** Literals */
 fragment Digit: [0-9] ;
