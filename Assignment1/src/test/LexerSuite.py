@@ -437,3 +437,12 @@ class LexerSuite(unittest.TestCase):
         """
         expect = """var,a,int,=,0b100101,;,<EOF>"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,2002))
+    def test_unclosed_string6(self):
+        """UNCLOSE_STRING"""
+        self.assertTrue(TestLexer.checkLexeme(""" "VOTIEN\n" ""","Unclosed string: \"VOTIEN", 2003))
+    def test_unclosed_string7(self):
+        """UNCLOSE_STRING"""
+        input = """\"Hinh nhu em yeu duoi can mot nguoi
+        Dang doi tay noi co anh day roi\""""
+        expect = """Unclosed string: \"Hinh nhu em yeu duoi can mot nguoi"""
+        self.assertTrue(TestLexer.checkLexeme(input,expect,2004))

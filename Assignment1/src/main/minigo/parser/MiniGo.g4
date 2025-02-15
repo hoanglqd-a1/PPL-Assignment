@@ -27,27 +27,17 @@ options{
 	language=Python3;
 }
 
-program: decl_stmtlst EOF ;
+program: decl_lst EOF ;
 
-decl_stmtlst: decl_stmt decl_stmtlst | decl_stmt ;
+decl_lst: decl decl_lst | decl ;
 
-decl_stmt: decl | stmt ;
 
-decl: vardecl
+decl: var_decl
     | arraydecl
-    | constdecl
-    | funcdecl 
-    | structdecl 
-    | interfdecl 
-    ;
-    
-stmt: assigning
-    | ifelsestmt
-    | forloopstmt
-    | continuestmt
-    | breakstmt
-    | funccallstmt
-    | returnstmt
+    | const_decl
+    | func_decl 
+    | struct_decl 
+    | interf_decl 
     ;
 
 //* expression */
@@ -56,60 +46,61 @@ expr1: expr1 AND expr2 | expr2 ;
 expr2: expr2 compare_op expr3 | expr3 ;
 expr3: expr3 ADD expr4 | expr3 SUB expr4 | expr4 ;
 expr4: expr4 MUL expr5 | expr4 DIV expr5 | expr4 MOD expr5 | expr5 ;
-expr5: NOT expr6 | SUB expr6 | expr6;
-expr6: expr6 DOT ID | expr6 LSB expr RSB | expr6 LP exprlst RP | expr7 ;
-expr7: LP expr RP | ID | literal ;
-exprlst: exprlstprime | ;
-exprlstprime: expr COMMA exprlstprime | expr ;
+expr5: NOT expr5 | SUB expr5 | expr6 | LP expr RP | literal;
+expr6: expr6 DOT ID | expr6 LSB expr RSB | expr6 LP exprlst RP | ID ;
+exprlst: expr_lstprime | ;
+expr_lstprime: expr COMMA expr_lstprime | expr ;
 
 //* assigning value statement */
-assigning: lhs assign expr end_stm ;
+assigning_stmt: lhs assign expr end_stm ;
 
 //* left hand side */
-lhs: lhs DOT ID | lhs LSB expr RSB | ID ;
+lhs: expr6 DOT ID | expr6 LSB expr RSB | ID;
 
 //* var declare statement */
-vardecl: VAR_ ID data_type end_stm 
-        | VAR_ ID EQUAL expr end_stm 
-        | VAR_ ID data_type EQUAL expr end_stm
+var_decl: VAR_ ID data_type end_stm 
+        | VAR_ ID data_type? EQUAL expr end_stm
         ;
 
 //* const */
-constdecl: CONST_ ID EQUAL expr end_stm ;
+const_decl: CONST_ ID EQUAL expr end_stm ;
 
 //* array */
-arraydecl: VAR_ ID arridxlst data_type end_stm 
-        | VAR_ ID arridxlst data_type EQUAL arr_literal end_stm ;
-arridxlst: arridx arridxlst | arridx ;
+arraydecl: VAR_ ID arridx_lst data_type end_stm 
+        |  VAR_ ID arridx_lst data_type EQUAL arr_literal end_stm ;
+arridx_lst: arridx arridx_lst | arridx ;
 arridx: LSB expr RSB ;
 
 //* function. Note that we have not implemented function body yet */
-funcdecl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
+func_decl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
 funcparam: LP paramlst RP ;
-paramlst: paramlstprime | ;
-paramlstprime: param COMMA paramlstprime | param ;
-param: idlst data_type ;
-idlst: ID COMMA idlst | ID ;
+paramlst: param_lstprime | ;
+param_lstprime: param COMMA param_lstprime | param ;
+param: id_nnlst data_type ;
+id_nnlst: ID COMMA id_nnlst | ID ;
 receiver: LP ID ID RP;
 
 
-//* struct */
-structdecl: TYPE_ ID STRUCT_ structfield end_stm ;
-structfield: LCB fielddecllst RCB ;
-fielddecllst: fielddecl fielddecllst | ;
-fielddecl: ID data_type arridxlst? end_stm
-        | ID ID end_stm
-        | ID INTERFACE_ end_stm
-        ;
+//* struct decl */
+struct_decl: TYPE_ ID STRUCT_ structfield end_stm ;
+structfield: LCB fielddecl_nnlst RCB ;
+fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl;
+fielddecl: ID data_type end_stm ;
+
+//* struct literal */
+struct_literal: ID LCB structparam_lst RCB ;
+structparam_lst: structparam_lstprime | ;
+structparam_lstprime: structparam COMMA structparam_lstprime | structparam ;
+structparam: ID COLON expr ;
 
 //* interface */
-interfdecl: TYPE_ ID INTERFACE_ interfmeth end_stm ;
-interfmeth: LCB interfmethlst RCB ;
-interfmethlst: interfmethmem interfmethlst | ;
+interf_decl: TYPE_ ID INTERFACE_ interfmeth end_stm ;
+interfmeth: LCB interfmeth_nnlst RCB ;
+interfmeth_nnlst: interfmethmem interfmeth_nnlst | interfmethmem ;
 interfmethmem: ID funcparam data_type? end_stm ;
 
 //* if statement */
-ifelsestmt: if_ elseif_lst else_ end_stm;
+ifelse_stmt: if_ elseif_lst else_ end_stm;
 if_: IF_ condition blockcode end_stm? ;
 elseif_: ELSE_ IF_ condition blockcode end_stm? ;
 elseif_lst: elseif_ elseif_lst | ;
@@ -117,47 +108,45 @@ else_: ELSE_ blockcode | ;
 condition: LP expr RP ;
 
 //* for statement */
-forloopstmt: FOR_ expr blockcode end_stm
-            | FOR_ ID ASSIGN expr SEMICOLON expr SEMICOLON ID uptassign expr blockcode end_stm
+forloop_stmt: FOR_ expr blockcode end_stm
+            | FOR_ forloop_init SEMICOLON expr SEMICOLON forloop_update blockcode end_stm
             | FOR_ ID COMMA ID ASSIGN RANGE_ id__arr blockcode end_stm
             ;
+forloop_init: ID ASSIGN expr ;
+forloop_update: ID uptassign expr ;
 id__arr: ID | arr_literal ;
 
 //* break statement */
-breakstmt: BREAK_ end_stm;
+break_stmt: BREAK_ end_stm;
 
 //* continue statement */
-continuestmt: CONTINUE_ end_stm;
+continue_stmt: CONTINUE_ end_stm;
 
 //* call statement */
-funccallstmt: expr6 LP exprlst RP end_stm ;
+funccall_stmt: expr6 LP exprlst RP end_stm ;
 
 //* return statement */
-returnstmt: RETURN_ end_stm | RETURN_ expr end_stm;
+return_stmt: RETURN_ end_stm | RETURN_ expr end_stm;
 
 assign: uptassign | ASSIGN ;
-blockcode: LCB blockcodestmtlst RCB ;
-blockcodestmtlst: blockcodestmt blockcodestmtlst | ;
-blockcodestmt: assigning 
-        | vardecl 
+blockcode: LCB blockcodestmt_nnlst RCB ;
+blockcodestmt_nnlst: blockcodestmt blockcodestmt_nnlst | blockcodestmt;
+blockcodestmt: assigning_stmt
+        | var_decl 
         | arraydecl 
-        | constdecl 
-        | ifelsestmt 
-        | forloopstmt 
-        | continuestmt 
-        | breakstmt 
-        | funccallstmt 
-        | returnstmt 
+        | const_decl 
+        | ifelse_stmt 
+        | forloop_stmt 
+        | continue_stmt 
+        | break_stmt 
+        | funccall_stmt 
+        | return_stmt 
         ;
-arr_literal: arridxlst data_type arrelemlst ;
-arrelemlst: LCB arreleml RCB ;
-arreleml: arrelem COMMA arreleml | arrelem ;
-arrelem: expr | arrelemlst ;
-struct_literal: ID LCB structparamlst RCB ;
-structparamlst: structparamlstprime | ;
-structparamlstprime: structparam COMMA structparamlstprime | structparam ;
-structparam: ID COLON literal ;
-data_type: primitive_datatype | ID ;
+arr_literal: arridx_lst data_type arrvalue ;
+arrvalue: LCB arrelem_lst RCB ;
+arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
+arrelem: expr | arrvalue ;
+data_type: arridx_lst? primitive_datatype | arridx_lst? ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
 uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
@@ -246,7 +235,7 @@ fragment OctInt: '0' [oO] [0-7]+ ;
 fragment HexInt: '0' [xX] [0-9a-fA-F]+ ;
 INTEGER: (DecInt | BinInt | OctInt | HexInt) {self.lastTokenType = 'INTEGER'};
 
-fragment Char: ~[\\"] ;
+fragment Char: ~[\\\n"] ;
 fragment EscapeChar: '\\' [\\"rtn] ;
 STRING: '"' (Char | EscapeChar)* '"' {self.lastTokenType = 'STRING'};
 
