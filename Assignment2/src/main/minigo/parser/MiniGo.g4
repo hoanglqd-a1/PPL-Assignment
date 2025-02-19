@@ -33,7 +33,7 @@ decl_lst: decl decl_lst | decl ;
 
 
 decl: var_decl
-    | arraydecl
+    | array_decl
     | const_decl
     | func_decl 
     | struct_decl 
@@ -46,63 +46,59 @@ expr1: expr1 AND expr2 | expr2 ;
 expr2: expr2 compare_op expr3 | expr3 ;
 expr3: expr3 ADD expr4 | expr3 SUB expr4 | expr4 ;
 expr4: expr4 MUL expr5 | expr4 DIV expr5 | expr4 MOD expr5 | expr5 ;
-expr5: NOT expr5 | SUB expr5 | expr6;
-expr6: LP expr RP | ID access_tail_lst | funccall | literal ;
-access_tail_lst: access_tail access_tail_lst | ;
-access_tail: attr_access_tail | arrelem_access_tail ;
-attr_access_tail: DOT ID ;
-arrelem_access_tail: LSB expr RSB ;
-funccall: ID access_tail_lst funccall_tail ;
-funccall_tail: LP exprlst RP ;
-exprlst: expr_lstprime | ;
+expr5: NOT expr5 | SUB expr5 | expr6 ;
+expr6: expr6 tail | expr7 ; 
+expr7: LP expr RP | literal | ID ;
+
+tail: field_access_tail | arr_elem_access | funccall_tail ;
+field_access_tail: DOT ID ;
+arr_elem_access: LSB expr RSB ;
+funccall_tail: LP expr_lst RP ;
+expr_lst: expr_lstprime | ;
 expr_lstprime: expr COMMA expr_lstprime | expr ;
 
 //* assigning value statement */
 assigning_stmt: lhs assign expr end_stm ;
 
 //* left hand side */
-lhs: ID access_tail_lst ;
+lhs: expr6 field_access_tail | expr6 arr_elem_access | ID;
 
 //* var declare statement */
-var_decl: VAR_ ID data_type end_stm 
-        | VAR_ ID data_type? EQUAL expr end_stm
+var_decl: VAR_ ID data_type end_stm                 #Type_Var_decl
+        | VAR_ ID EQUAL expr end_stm                #Value_Var_decl
+        | VAR_ ID data_type EQUAL expr end_stm      #TypeValue_Var_decl
         ;
 
 //* const */
 const_decl: CONST_ ID EQUAL expr end_stm ;
 
 //* array */
-arraydecl: VAR_ ID arridx_lst data_type end_stm 
+array_decl: VAR_ ID arridx_lst data_type end_stm 
         |  VAR_ ID arridx_lst data_type EQUAL arr_literal end_stm ;
 arridx_lst: arridx arridx_lst | arridx ;
-arridx: LSB INTEGER RSB | LSB ID RSB ;
+arridx: LSB expr RSB ;
 
 //* function. Note that we have not implemented function body yet */
-func_decl: FUNC_ receiver? ID funcparam func_returntype? blockcode end_stm ;
+func_decl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
 funcparam: LP paramlst RP ;
 paramlst: param_lstprime | ;
 param_lstprime: param COMMA param_lstprime | param ;
 param: id_nnlst data_type ;
 id_nnlst: ID COMMA id_nnlst | ID ;
 receiver: LP ID ID RP;
-func_returntype: lrsb_lst data_type ;
-lrsb_lst: LSB RSB lrsb_lst | ;
 
 
 //* struct decl */
 struct_decl: TYPE_ ID STRUCT_ structfield end_stm ;
 structfield: LCB fielddecl_nnlst RCB ;
 fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl;
-fielddecl: ID data_type arridx_lst? end_stm
-        | ID ID end_stm
-        | ID INTERFACE_ end_stm
-        ;
+fielddecl: ID data_type end_stm ;
 
 //* struct literal */
 struct_literal: ID LCB structparam_lst RCB ;
 structparam_lst: structparam_lstprime | ;
 structparam_lstprime: structparam COMMA structparam_lstprime | structparam ;
-structparam: ID COLON literal ;
+structparam: ID COLON expr ;
 
 //* interface */
 interf_decl: TYPE_ ID INTERFACE_ interfmeth end_stm ;
@@ -134,17 +130,17 @@ break_stmt: BREAK_ end_stm;
 continue_stmt: CONTINUE_ end_stm;
 
 //* call statement */
-funccall_stmt: funccall end_stm ;
+funccall_stmt: expr6 funccall_tail end_stm ;
 
 //* return statement */
 return_stmt: RETURN_ end_stm | RETURN_ expr end_stm;
 
 assign: uptassign | ASSIGN ;
 blockcode: LCB blockcodestmt_nnlst RCB ;
-blockcodestmt_nnlst: blockcodestmt blockcodestmt_nnlst | blockcodestmt;
+blockcodestmt_nnlst: blockcodestmt blockcodestmt_nnlst | blockcodestmt ;
 blockcodestmt: assigning_stmt
         | var_decl 
-        | arraydecl 
+        | array_decl 
         | const_decl 
         | ifelse_stmt 
         | forloop_stmt 
@@ -157,7 +153,7 @@ arr_literal: arridx_lst data_type arrvalue ;
 arrvalue: LCB arrelem_lst RCB ;
 arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
 arrelem: expr | arrvalue ;
-data_type: primitive_datatype | ID ;
+data_type: arridx_lst? primitive_datatype | arridx_lst? ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
 uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;

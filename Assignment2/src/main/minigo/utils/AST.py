@@ -289,8 +289,6 @@ class Return(Stmt):
     def accept(self, v, param):
         return v.visitReturn(self, param)
 
-
-
 @dataclass
 class Id(Type,LHS):
     name : str
@@ -369,7 +367,6 @@ class MethCall(Expr,Stmt):
     def accept(self, v, param):
         return v.visitMethCall(self, param)
 
-
 @dataclass
 class IntLiteral(PrimLit):
     value:int
@@ -418,7 +415,7 @@ def nested2Str(dat: NestedList):
         return str(dat)
 
 @dataclass
-class ArrayLiteral(Literal):
+class Array (Literal):
     dimens:List[int]
     eleType: Type
     value: NestedList
