@@ -4,12 +4,12 @@ from utils.AST import *
 
 class ASTGeneration(MiniGoVisitor):
     def visitProgram(self,ctx:MiniGoParser.ProgramContext):
-        return Program([self.visit(ctx.decl_lst())])
+        return Program(self.visit(ctx.decl_lst()))
 
     def visitDecl_lst(self,ctx:MiniGoParser.Decl_lstContext):
         if ctx.getChildCount() == 2:
-            return [self.visit(ctx.decl()),self.visit(ctx.decl_lst())]
-        return self.visit(ctx.decl())
+            return [self.visit(ctx.decl())] + self.visit(ctx.decl_lst())
+        return [self.visit(ctx.decl())]
         
     def visitDecl(self,ctx:MiniGoParser.DeclContext):
         return self.visit(ctx.func_decl())
@@ -17,46 +17,58 @@ class ASTGeneration(MiniGoVisitor):
     def visitExpr(self, ctx:MiniGoParser.ExprContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr1())
-        return BinaryOp([self.visit(ctx.expr()),ctx.OR().getText(),self.visit(ctx.expr1())])
+        return BinaryOp(ctx.OR().getText(),self.visit(ctx.expr()),self.visit(ctx.expr1()))
         
     def visitExpr1(self,ctx:MiniGoParser.Expr1Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr2())
-        return BinaryOp([self.visit(ctx.expr1()),ctx.AND().getText(),self.visit(ctx.expr2())])
+        return BinaryOp(ctx.AND().getText(),self.visit(ctx.expr1()),self.visit(ctx.expr2()))
 
     def visitExpr2(self, ctx:MiniGoParser.Expr2Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr3())
-        return BinaryOp([self.visit(ctx.expr2()),self.visit(ctx.compare_op()),self.visit(ctx.expr3())])
+        return BinaryOp(self.visit(ctx.compare_op()),self.visit(ctx.expr2()),self.visit(ctx.expr3()))
     
     def visitExpr3(self, ctx:MiniGoParser.Expr3Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr4())
         #ctx.getChild(1) == ADD || SUB
-        return BinaryOp[self.visit(ctx.expr3()),ctx.getChild(1).getText(),self.visit(ctx.expr4())]
+        return BinaryOp(ctx.getChild(1).getText(),self.visit(ctx.expr3()),self.visit(ctx.expr4()))
     
     def visitExpr4(self, ctx:MiniGoParser.Expr4Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr5())
         #ctx.getChild(1) == MUL || DIV || MOD
-        return BinaryOp([self.visit(ctx.expr4),ctx.getChild(1).getText(),self.visit(ctx.expr5())])
+        return BinaryOp(ctx.getChild(1).getText(),self.visit(ctx.expr4),self.visit(ctx.expr5()))
     
     def visitExpr5(self, ctx:MiniGoParser.Expr5Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr6())
         #ctx.getChild(0) == NOT | SUB
-        return UnaryOp([ctx.getChild(0).getText(),self.visit(ctx.expr6())])
+        return UnaryOp(ctx.getChild(0).getText(),self.visit(ctx.expr6()))
     
     def visitExpr6(self, ctx:MiniGoParser.Expr6Context):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.expr7())
-        return [self.visit(ctx.expr6()), self.visit(ctx.tail())]
+        
+        tail_node = ctx.tail()
+        if isinstance(tail_node, MiniGoParser.Field_access_tailContext):
+            return FieldAccess(self.visit(ctx.expr6(),self.visit(tail_node)))
+        
+        if isinstance(tail_node, MiniGoParser.Arr_elem_accessContext):
+            return ArrayCell(self.visit(ctx.expr6(),self.visit(tail_node)))
+        
+        head_node = ctx.expr6()
+        if head_node.expr6() and isinstance(head_node.tail(),MiniGoParser.Field_access_tailContext()):
+            return MethCall(self.visit(head_node.expr6()),self.visit(head_node.tail()),self.visit(tail_node))
+
+        return FuncCall(self.visit(head_node),self.visit(tail_node))
     
     def visitExpr7(self, ctx:MiniGoParser.Expr7Context):
         if ctx.getChildCount() == 3:
             return self.visit(ctx.expr()),ctx.RP()
         
-        if ctx.literal() is not None:
+        if ctx.literal():
             return self.visit(ctx.literal())
         
         return Id(ctx.ID().getText())
@@ -79,8 +91,8 @@ class ASTGeneration(MiniGoVisitor):
     
     def visitExpr_lstprime(self, ctx:MiniGoParser.Expr_lstprimeContext):
         if ctx.getChildCount() == 1:
-            return self.visit(ctx.expr())
-        return [self.visit(ctx.expr()),self.visit(ctx.expr_lstprime())]
+            return [self.visit(ctx.expr())]
+        return [self.visit(ctx.expr())] + self.visit(ctx.expr_lstprime())
 
     def visitAssigning_stmt(self, ctx:MiniGoParser.Assigning_stmtContext):
         return Assign([self.visit(ctx.lhs()),self.visit(ctx.expr())])
@@ -88,22 +100,27 @@ class ASTGeneration(MiniGoVisitor):
     def visitLhs(self, ctx:MiniGoParser.LhsContext):
         if ctx.getChildCount() == 1:
             return Id(ctx.ID().getText())
+
+        if ctx.field_access_tail():
+            return FieldAccess(self.visit(ctx.expr6()),self.visit(ctx.field_access_tail()))
         
-        dst = ctx.field_access_tail() if ctx.field_access_tail() is not None else ctx.arr_elem_access()
-        return [self.visit(ctx.expr6()),self.visit(dst)]
+        return ArrayCell(self.visit(ctx.expr6()),self.visit(ctx.arr_elem_access()))
     
     def visitType_Var_decl(self, ctx:MiniGoParser.Type_Var_declContext):
-        return VarDecl([ctx.ID().getText(),self.visit(ctx.data_type())])
+        return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()),None)
 
     def visitValue_Var_decl(self, ctx:MiniGoParser.Value_Var_declContext):
-        return VarDecl([ctx.ID().getText(),self.visit(ctx.expr())])
+        return VarDecl(ctx.ID().getText(),None,self.visit(ctx.expr()))
 
 
     def visitTypeValue_Var_decl(self, ctx:MiniGoParser.TypeValue_Var_declContext):
-        return VarDecl([ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr())])
+        return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr()))
     
     def visitConst_decl(self, ctx:MiniGoParser.Const_declContext):
-        return ConstDecl([ctx.ID().getText(),self.visit(ctx.expr())])
+        if not ctx.data_type():   
+            return ConstDecl(ctx.ID().getText(),None,self.visit(ctx.expr()))
+        
+        return ConstDecl(ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr()))
     
     def visitArray_decl(self, ctx:MiniGoParser.Array_declContext):
         if ctx.getChildCount() == 5:

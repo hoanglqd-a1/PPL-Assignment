@@ -70,7 +70,7 @@ var_decl: VAR_ ID data_type end_stm                 #Type_Var_decl
         ;
 
 //* const */
-const_decl: CONST_ ID EQUAL expr end_stm ;
+const_decl: CONST_ ID data_type? EQUAL expr end_stm ;
 
 //* array */
 array_decl: VAR_ ID arridx_lst data_type end_stm 
