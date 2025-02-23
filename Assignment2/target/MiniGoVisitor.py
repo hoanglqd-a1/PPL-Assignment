@@ -124,21 +124,6 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MiniGoParser#array_decl.
-    def visitArray_decl(self, ctx:MiniGoParser.Array_declContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#arridx_lst.
-    def visitArridx_lst(self, ctx:MiniGoParser.Arridx_lstContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#arridx.
-    def visitArridx(self, ctx:MiniGoParser.ArridxContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MiniGoParser#func_decl.
     def visitFunc_decl(self, ctx:MiniGoParser.Func_declContext):
         return self.visitChildren(ctx)
@@ -149,8 +134,8 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MiniGoParser#paramlst.
-    def visitParamlst(self, ctx:MiniGoParser.ParamlstContext):
+    # Visit a parse tree produced by MiniGoParser#param_lst.
+    def visitParam_lst(self, ctx:MiniGoParser.Param_lstContext):
         return self.visitChildren(ctx)
 
 
@@ -329,6 +314,16 @@ class MiniGoVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MiniGoParser#arridx_lst.
+    def visitArridx_lst(self, ctx:MiniGoParser.Arridx_lstContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#arridx.
+    def visitArridx(self, ctx:MiniGoParser.ArridxContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MiniGoParser#arrvalue.
     def visitArrvalue(self, ctx:MiniGoParser.ArrvalueContext):
         return self.visitChildren(ctx)
@@ -346,6 +341,11 @@ class MiniGoVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MiniGoParser#data_type.
     def visitData_type(self, ctx:MiniGoParser.Data_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MiniGoParser#prime_datatype.
+    def visitPrime_datatype(self, ctx:MiniGoParser.Prime_datatypeContext):
         return self.visitChildren(ctx)
 
 

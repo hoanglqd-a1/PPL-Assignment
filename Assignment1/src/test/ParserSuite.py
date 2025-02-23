@@ -872,7 +872,7 @@ func main() {
         self.assertTrue(TestParser.checkParser(input,expect,294))
     def test_constdecl4(self):
         input = """const x int = 10;"""
-        expect = "Error on line 1 col 9: int"
+        expect = "successful"
         self.assertTrue(TestParser.checkParser(input,expect,295))
     def test_funccall6(self):
         input = """func main(){

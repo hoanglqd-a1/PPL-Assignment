@@ -112,7 +112,6 @@ class ASTGeneration(MiniGoVisitor):
     def visitValue_Var_decl(self, ctx:MiniGoParser.Value_Var_declContext):
         return VarDecl(ctx.ID().getText(),None,self.visit(ctx.expr()))
 
-
     def visitTypeValue_Var_decl(self, ctx:MiniGoParser.TypeValue_Var_declContext):
         return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr()))
     
@@ -122,14 +121,46 @@ class ASTGeneration(MiniGoVisitor):
         
         return ConstDecl(ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr()))
     
-    def visitArray_decl(self, ctx:MiniGoParser.Array_declContext):
-        if ctx.getChildCount() == 5:
-            return [ctx.ID().getText(),self.visit(ctx.arridx_lst()),self.visit(ctx.data_type())]
-        
-        return [ctx.ID().getText(),self.visit(ctx.arridx_lst()),self.visit(ctx.data_type()),self.visit(ctx.arr_literal())]
-    
     def visitFunc_decl(self,ctx:MiniGoParser.Func_declContext):
-        return FuncDecl(ctx.ID().getText(),[],VoidType(),Block([]))
-    	
+        name = ctx.ID().getText()
+        params = self.visit(ctx.funcparam())
+        retType = self.visit(ctx.data_type()) if ctx.data_type() else VoidType()
+        body = self.visit(ctx.blockcode())
+        if ctx.receiver():
+            receiver, recType = self.visit(ctx.receiver())
+            return MethodDecl(receiver,recType,FuncDecl(name,params,retType,body))
+        
+        return FuncDecl(name,params,retType,body)
+    
+    def visitFuncparam(self, ctx:MiniGoParser.FuncparamContext):
+        return self.visit(ctx.paramlst())
+    
+    def visitParam_lst(self, ctx:MiniGoParser.Param_lstContext):
+        return self.visit(ctx.param_lstprime()) if self.visit(ctx.param_lstprime()) else []
+    
+    def visitParam_lstprime(self, ctx:MiniGoParser.Param_lstprimeContext):
+        if ctx.param_lstprime():
+            return [self.visit(ctx.param())] + self.visit(ctx.param_lstprime())
+        
+        return [self.visit(ctx.param())]
+    
+    def visitParam(self, ctx:MiniGoParser.ParamContext):
+        id_lst = self.visit(ctx.id_nnlst())
+        datatype = self.visit(ctx.data_type())
+        ParamDecl_lst = []
+        for id in id_lst:
+            ParamDecl_lst.append(ParamDecl(id,datatype))
+        
+        return ParamDecl_lst
+    
+    def visitId_nnlst(self, ctx:MiniGoParser.Id_nnlstContext):
+        if ctx.id_nnlst():
+            return [ctx.ID().getText()] + self.visit(ctx.id_nnlst())
+        
+        return [ctx.ID().getText()]
+    
+    def visitReceiver(self, ctx:MiniGoParser.ReceiverContext):
+        return ctx.ID(0).getText(),ctx.ID(1).getText()        
+
     def visitVar_decl(self,ctx:MiniGoParser.Var_declContext):
         return VarDecl(ctx.ID().getText(),IntType(),None)

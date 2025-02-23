@@ -33,7 +33,6 @@ decl_lst: decl decl_lst | decl ;
 
 
 decl: var_decl
-    | array_decl
     | const_decl
     | func_decl 
     | struct_decl 
@@ -72,16 +71,10 @@ var_decl: VAR_ ID data_type end_stm                 #Type_Var_decl
 //* const */
 const_decl: CONST_ ID data_type? EQUAL expr end_stm ;
 
-//* array */
-array_decl: VAR_ ID arridx_lst data_type end_stm 
-        |  VAR_ ID arridx_lst data_type EQUAL arr_literal end_stm ;
-arridx_lst: arridx arridx_lst | arridx ;
-arridx: LSB expr RSB ;
-
 //* function. Note that we have not implemented function body yet */
 func_decl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
-funcparam: LP paramlst RP ;
-paramlst: param_lstprime | ;
+funcparam: LP param_lst RP ;
+param_lst: param_lstprime | ;
 param_lstprime: param COMMA param_lstprime | param ;
 param: id_nnlst data_type ;
 id_nnlst: ID COMMA id_nnlst | ID ;
@@ -91,7 +84,7 @@ receiver: LP ID ID RP;
 //* struct decl */
 struct_decl: TYPE_ ID STRUCT_ structfield end_stm ;
 structfield: LCB fielddecl_nnlst RCB ;
-fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl;
+fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl ;    
 fielddecl: ID data_type end_stm ;
 
 //* struct literal */
@@ -140,7 +133,6 @@ blockcode: LCB blockcodestmt_nnlst RCB ;
 blockcodestmt_nnlst: blockcodestmt blockcodestmt_nnlst | blockcodestmt ;
 blockcodestmt: assigning_stmt
         | var_decl 
-        | array_decl 
         | const_decl 
         | ifelse_stmt 
         | forloop_stmt 
@@ -149,11 +141,14 @@ blockcodestmt: assigning_stmt
         | funccall_stmt 
         | return_stmt 
         ;
-arr_literal: arridx_lst data_type arrvalue ;
+arr_literal: arridx_lst prime_datatype arrvalue ;
+arridx_lst: arridx arridx_lst | arridx ;
+arridx: LSB expr RSB ;
 arrvalue: LCB arrelem_lst RCB ;
 arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
 arrelem: expr | arrvalue ;
-data_type: arridx_lst? primitive_datatype | arridx_lst? ID ;
+data_type: arridx_lst? prime_datatype ;
+prime_datatype: primitive_datatype | ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
 uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
