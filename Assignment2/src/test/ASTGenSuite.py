@@ -5,8 +5,8 @@ from AST import *
 class ASTGenSuite(unittest.TestCase):
     def test_simple_program(self):
         """Simple program: int main() {} """
-        input = """func main() {};"""
-        expect = str(Program([FuncDecl("main",[],VoidType(),Block([]))]))
+        input = """func main() {var x int;};"""
+        expect = str(Program([FuncDecl("main",[],VoidType(),Block([VarDecl("x",IntType(),None)]))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,300))
 
     def test_more_complex_program(self):
@@ -17,7 +17,14 @@ class ASTGenSuite(unittest.TestCase):
     
     def test_call_without_parameter(self):
         """More complex program"""
-        input = """func main () {}; var x int ;"""
-        expect = str(Program([FuncDecl("main",[],VoidType(),Block([])),VarDecl("x",IntType(),None)]))
+        input = """func main () {var x int = 100;}; var x int ;"""
+        expect = str(
+            Program([
+                FuncDecl("main",[],VoidType(),Block([
+                    VarDecl("x",IntType(),IntLiteral(100))
+                ])),
+                VarDecl("x",IntType(),None)
+            ])
+        )
         self.assertTrue(TestAST.checkASTGen(input,expect,302))
    
