@@ -32,12 +32,25 @@ program: decl_lst EOF ;
 decl_lst: decl decl_lst | decl ;
 
 
-decl: var_decl
+decl: (
+    var_decl
     | const_decl
     | func_decl 
     | struct_decl 
-    | interf_decl 
-    ;
+    | interface_decl 
+    ) end_stm ;
+
+stmt: (
+    var_decl
+    | const_decl
+    | assigning_stmt
+    | ifelse_stmt
+    | forloop_stmt
+    | break_stmt
+    | continue_stmt
+    | funccall_stmt
+    | return_stmt
+    ) end_stm ;
 
 //* expression */
 expr: expr OR expr1 | expr1;
@@ -56,27 +69,21 @@ funccall_tail: LP expr_lst RP ;
 expr_lst: expr_lstprime | ;
 expr_lstprime: expr COMMA expr_lstprime | expr ;
 
-//* assigning value statement */
-assigning_stmt: lhs assign expr end_stm ;
-
 //* left hand side */
 lhs: expr6 field_access_tail | expr6 arr_elem_access | ID;
 
 //* var declare statement */
-var_decl: VAR_ ID data_type end_stm                 #Type_Var_decl
-        | VAR_ ID EQUAL expr end_stm                #Value_Var_decl
-        | VAR_ ID data_type EQUAL expr end_stm      #TypeValue_Var_decl
-        ;
+var_decl: withInit_var_decl | withoutInit_var_decl ;
+withInit_var_decl: VAR_ ID data_type? EQUAL expr ;
+withoutInit_var_decl: VAR_ ID data_type ;
 
 //* const */
-const_decl: CONST_ ID data_type? EQUAL expr end_stm ;
-
-//* array */
+const_decl: CONST_ ID data_type? EQUAL expr ;
 
 //* function. Note that we have not implemented function body yet */
-func_decl: FUNC_ receiver? ID funcparam data_type? blockcode end_stm ;
-funcparam: LP paramlst RP ;
-paramlst: param_lstprime | ;
+func_decl: FUNC_ receiver? ID funcparam data_type? blockcode ;
+funcparam: LP param_lst RP ;
+param_lst: param_lstprime | ;
 param_lstprime: param COMMA param_lstprime | param ;
 param: id_nnlst data_type ;
 id_nnlst: ID COMMA id_nnlst | ID ;
@@ -84,10 +91,60 @@ receiver: LP ID ID RP;
 
 
 //* struct decl */
-struct_decl: TYPE_ ID STRUCT_ structfield end_stm ;
+struct_decl: TYPE_ ID STRUCT_ structfield ;
 structfield: LCB fielddecl_nnlst RCB ;
-fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl;
+fielddecl_nnlst: fielddecl fielddecl_nnlst | fielddecl ;    
 fielddecl: ID data_type end_stm ;
+
+//* interface decl */
+interface_decl: TYPE_ ID INTERFACE_ interfacemeth ;
+interfacemeth: LCB interfacemeth_nnlst RCB ;
+interfacemeth_nnlst: interfacemethmem interfacemeth_nnlst | interfacemethmem ;
+interfacemethmem: ID funcparam data_type? end_stm ;
+
+//* assigning value statement */
+assigning_stmt: lhs assign expr ;
+
+//* if statement */
+ifelse_stmt: if_ elseif_lst else_? ;
+if_: IF_ condition blockcode end_stm? ;
+elseif_: ELSE_ IF_ condition blockcode end_stm? ;
+elseif_lst: elseif_ elseif_lst | ;
+else_: ELSE_ blockcode ;
+condition: LP expr RP ;
+
+//* for statement */
+forloop_stmt: FOR_ expr blockcode                                                       #ForBasic
+            | FOR_ forloop_init SEMICOLON expr SEMICOLON forloop_update blockcode       #ForStep
+            | FOR_ ID COMMA ID ASSIGN RANGE_ expr blockcode                             #ForEach
+            ;
+
+forloop_init: VAR_ ID data_type? EQUAL expr | assigning_stmt ;
+forloop_update: ID uptassign expr ;
+
+//* break statement */
+break_stmt: BREAK_ ;
+
+//* continue statement */
+continue_stmt: CONTINUE_ ;
+
+//* call statement */
+funccall_stmt: expr6 funccall_tail ;
+
+//* return statement */
+return_stmt: RETURN_ | RETURN_ expr ;
+
+assign: uptassign | ASSIGN ;
+blockcode: LCB stmt_nnlst RCB ;
+stmt_nnlst: stmt stmt_nnlst | stmt ;
+
+//* array literal */
+arr_literal: arridx_lst prime_datatype arrvalue ;
+arridx_lst: arridx arridx_lst | arridx ;
+arridx: LSB expr RSB ;
+arrvalue: LCB arrelem_lst RCB ;
+arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
+arrelem: expr | arrvalue ;
 
 //* struct literal */
 struct_literal: ID LCB structparam_lst RCB ;
@@ -95,64 +152,10 @@ structparam_lst: structparam_lstprime | ;
 structparam_lstprime: structparam COMMA structparam_lstprime | structparam ;
 structparam: ID COLON expr ;
 
-//* interface */
-interf_decl: TYPE_ ID INTERFACE_ interfmeth end_stm ;
-interfmeth: LCB interfmeth_nnlst RCB ;
-interfmeth_nnlst: interfmethmem interfmeth_nnlst | interfmethmem ;
-interfmethmem: ID funcparam data_type? end_stm ;
-
-//* if statement */
-ifelse_stmt: if_ elseif_lst else_ end_stm;
-if_: IF_ condition blockcode end_stm? ;
-elseif_: ELSE_ IF_ condition blockcode end_stm? ;
-elseif_lst: elseif_ elseif_lst | ;
-else_: ELSE_ blockcode | ;
-condition: LP expr RP ;
-
-//* for statement */
-forloop_stmt: FOR_ expr blockcode end_stm
-            | FOR_ forloop_init SEMICOLON expr SEMICOLON forloop_update blockcode end_stm
-            | FOR_ ID COMMA ID ASSIGN RANGE_ id__arr blockcode end_stm
-            ;
-forloop_init: ID ASSIGN expr ;
-forloop_update: ID uptassign expr ;
-id__arr: ID | arr_literal ;
-
-//* break statement */
-break_stmt: BREAK_ end_stm;
-
-//* continue statement */
-continue_stmt: CONTINUE_ end_stm;
-
-//* call statement */
-funccall_stmt: expr6 funccall_tail end_stm ;
-
-//* return statement */
-return_stmt: RETURN_ end_stm | RETURN_ expr end_stm;
-
-assign: uptassign | ASSIGN ;
-blockcode: LCB blockcodestmt_nnlst RCB ;
-blockcodestmt_nnlst: blockcodestmt blockcodestmt_nnlst | blockcodestmt ;
-blockcodestmt: assigning_stmt
-        | var_decl 
-        | const_decl 
-        | ifelse_stmt 
-        | forloop_stmt 
-        | continue_stmt 
-        | break_stmt 
-        | funccall_stmt 
-        | return_stmt 
-        ;
-arr_literal: arridx_lst prime_datatype arrvalue ;
-arridx_lst: arridx arridx_lst | arridx ;
-arridx: LSB expr RSB ;
-arrvalue: LCB arrelem_lst RCB ;
-arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
-arrelem: expr | arrvalue ;
 data_type: arridx_lst? prime_datatype ;
 prime_datatype: primitive_datatype | ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
-literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | struct_literal | arr_literal ;
+literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | NIL_ | struct_literal | arr_literal ;
 uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
 compare_op: EQCOM | DIFFCOM | LESSCOM | LEQCOM | GRECOM | GEQCOM ;
 end_stm: SEMICOLON | EOF;

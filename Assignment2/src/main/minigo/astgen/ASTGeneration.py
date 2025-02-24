@@ -18,10 +18,28 @@ class ASTGeneration(MiniGoVisitor):
             ctx.const_decl()    or
             ctx.func_decl()     or
             ctx.struct_decl()   or
-            ctx.interf_decl()   
+            ctx.interface_decl()   
         )
 
+        assert decl is not None
+
         return self.visit(decl)
+    
+    def visitStmt(self, ctx:MiniGoParser.StmtContext):
+        stmt = (
+            ctx.var_decl()          or
+            ctx.const_decl()        or
+            ctx.assigning_stmt()    or
+            ctx.ifelse_stmt()       or
+            ctx.break_stmt()        or
+            ctx.forloop_stmt()      or
+            ctx.continue_stmt()     or
+            ctx.break_stmt()        or
+            ctx.funccall_stmt()     or
+            ctx.return_stmt()       
+        )
+
+        return self.visit(stmt)
     
     def visitExpr(self, ctx:MiniGoParser.ExprContext):
         if ctx.getChildCount() == 1:
@@ -84,7 +102,7 @@ class ASTGeneration(MiniGoVisitor):
         return Id(ctx.ID().getText())
     
     def visitTail(self, ctx:MiniGoParser.TailContext):
-        #ctx.getChild() == field_access_tail | arr_elem_access | funccall_tail
+        #ctx.getChild(0) == field_access_tail | arr_elem_access | funccall_tail
         return self.visit(ctx.getChild(0))
     
     def visitField_access_tail(self, ctx:MiniGoParser.Field_access_tailContext):
@@ -106,7 +124,24 @@ class ASTGeneration(MiniGoVisitor):
         return [self.visit(ctx.expr())] + self.visit(ctx.expr_lstprime())
 
     def visitAssigning_stmt(self, ctx:MiniGoParser.Assigning_stmtContext):
-        return Assign([self.visit(ctx.lhs()),self.visit(ctx.expr())])
+        # return Assign([self.visit(ctx.lhs()),self.visit(ctx.expr())])
+        assign = self.visit(ctx.assign()).getText()
+        lhs = self.visit(ctx.lhs())
+        expr = self.visit(ctx.expr())
+        if assign == ":=":
+            return Assign(lhs,expr)
+        elif assign == "+=":
+            return Assign(lhs,BinaryOp('+',lhs,expr))
+        elif assign == "-=":
+            return Assign(lhs,BinaryOp('-',lhs,expr))
+        elif assign == "*=":
+            return Assign(lhs,BinaryOp('*',lhs,expr))
+        elif assign == "/=":
+            return Assign(lhs,BinaryOp('/',lhs,expr))
+        elif assign == "%=":
+            return Assign(lhs,BinaryOp('%',lhs,expr))
+        else:
+            raise Exception("Unknown assignment operator: " + assign)
     
     def visitLhs(self, ctx:MiniGoParser.LhsContext):
         if ctx.getChildCount() == 1:
@@ -117,14 +152,13 @@ class ASTGeneration(MiniGoVisitor):
         
         return ArrayCell(self.visit(ctx.expr6()),self.visit(ctx.arr_elem_access()))
     
-    def visitType_Var_decl(self, ctx:MiniGoParser.Type_Var_declContext):
+    def visitVar_decl(self, ctx:MiniGoParser.Var_declContext):
+        return self.visit(ctx.withInit_var_decl() if ctx.withInit_var_decl() else ctx.withoutInit_var_decl())
+    def visitWithInit_var_decl(self, ctx:MiniGoParser.WithInit_var_declContext):
+        return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()) if ctx.data_type() else None,self.visit(ctx.expr()))
+
+    def visitWithoutInit_var_decl(self, ctx:MiniGoParser.WithoutInit_var_declContext):
         return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()),None)
-
-    def visitValue_Var_decl(self, ctx:MiniGoParser.Value_Var_declContext):
-        return VarDecl(ctx.ID().getText(),None,self.visit(ctx.expr()))
-
-    def visitTypeValue_Var_decl(self, ctx:MiniGoParser.TypeValue_Var_declContext):
-        return VarDecl(ctx.ID().getText(),self.visit(ctx.data_type()),self.visit(ctx.expr()))
     
     def visitConst_decl(self, ctx:MiniGoParser.Const_declContext):
         if not ctx.data_type():   
@@ -151,9 +185,9 @@ class ASTGeneration(MiniGoVisitor):
     
     def visitParam_lstprime(self, ctx:MiniGoParser.Param_lstprimeContext):
         if ctx.param_lstprime():
-            return [self.visit(ctx.param())] + self.visit(ctx.param_lstprime())
+            return self.visit(ctx.param()) + self.visit(ctx.param_lstprime())
         
-        return [self.visit(ctx.param())]
+        return self.visit(ctx.param())
     
     def visitParam(self, ctx:MiniGoParser.ParamContext):
         id_lst = self.visit(ctx.id_nnlst())
@@ -187,32 +221,76 @@ class ASTGeneration(MiniGoVisitor):
     
     def visitFielddecl(self, ctx:MiniGoParser.FielddeclContext):
         return [ctx.ID().getText(),self.visit(ctx.data_type())]
+    
+    def visitInterface_decl(self, ctx:MiniGoParser.Interface_declContext):
+        return InterfaceType(ctx.ID().getText(),self.visit(ctx.interfacemeth()))
 
+    def visitInterfacemeth(self, ctx:MiniGoParser.InterfacemethContext):
+        return self.visit(ctx.interfacemeth_nnlst())
+    
+    def visitInterfacemeth_nnlst(self, ctx:MiniGoParser.Interfacemeth_nnlstContext):
+        if ctx.interfacemeth_nnlst():
+            return [self.visit(ctx.interfacemethmem())] + self.visit(ctx.interfacemeth_nnlst())
+        
+        return [self.visit(ctx.interfacemethmem())]
+    
+    def visitInterfacemethmem(self, ctx:MiniGoParser.InterfacemethmemContext):
+        param_lst = self.visit(ctx.funcparam())
+        type_lst  = []
+        for param in param_lst:
+            assert isinstance(param,ParamDecl)
+            type_lst.append(param.parType)
+
+        return Prototype(ctx.ID().getText(),type_lst,self.visit(ctx.data_type()) if ctx.data_type() else VoidType())
+    
+    def visitIfelse_stmt(self, ctx:MiniGoParser.Ifelse_stmtContext):
+        if_condition, then_blockcode = self.visit(ctx.if_())
+        elseif_stmt_lst = self.visit(ctx.elseif_lst())
+        else_stmt = self.visit(ctx.else_()) if ctx.else_() else None
+        for elseif_stmt in reversed(elseif_stmt_lst):
+            elseif_condition, elseif_thenblockcode = elseif_stmt
+            else_stmt = If(elseif_condition,elseif_thenblockcode,else_stmt)
+        
+        return If(if_condition,then_blockcode,else_stmt)
+    
+    def visitIf_(self, ctx:MiniGoParser.If_Context):
+        return self.visit(ctx.condition()),self.visit(ctx.blockcode())
+    
+    def visitElseif_lst(self, ctx:MiniGoParser.Elseif_lstContext):
+        if not ctx.elseif_():
+            return []
+        
+        return [self.visit(ctx.elseif_())] + self.visit(ctx.elseif_lst())
+    
+    def visitElseif_(self, ctx:MiniGoParser.Elseif_Context):
+        return self.visit(ctx.condition()),self.visit(ctx.blockcode())
+    
+    def visitElse_(self, ctx:MiniGoParser.Else_Context):
+        return self.visit(ctx.blockcode())
+    
+    def visitCondition(self, ctx:MiniGoParser.ConditionContext):
+        return self.visit(ctx.expr())
+    
+    def visitForBasic(self, ctx:MiniGoParser.ForBasicContext):
+        return ForBasic(self.visit(ctx.expr()),self.visit(ctx.blockcode()))
+    
+    def visitForStep(self, ctx:MiniGoParser.ForStepContext):
+        return ForStep(self.visit(ctx.forloop_init()),self.visit(ctx.expr()),self.visit(ctx.assigning_stmt()),self.visit(ctx.blockcode()))
+    
+    def visitForEach(self, ctx:MiniGoParser.ForEachContext):
+        return ForEach(ctx.ID(0).getText(),ctx.ID(1).getText(),self.visit(ctx.expr()),self.visit(ctx.blockcode()))
+
+    def visitForloop_init(self, ctx:MiniGoParser.Forloop_initContext):
+        return self.visit(ctx.withInit_var_decl() if ctx.withInit_var_decl() else ctx.assigning_stmt())
+        
     def visitBlockcode(self, ctx:MiniGoParser.BlockcodeContext):
-        return Block(self.visit(ctx.blockcodestmt_nnlst()))
-    
-    def visitBlockcodestmt_nnlst(self, ctx:MiniGoParser.Blockcodestmt_nnlstContext):
-        if ctx.blockcodestmt_nnlst():
-            return [self.visit(ctx.blockcodestmt())] + self.visit(ctx.blockcodestmt_nnlst())
+        return Block(self.visit(ctx.stmt_nnlst()))
+
+    def visitStmt_nnlst(self, ctx:MiniGoParser.Stmt_nnlstContext):
+        if ctx.stmt_nnlst():
+            return [self.visit(ctx.stmt())] + self.visit(ctx.stmt_nnlst())
         
-        return [self.visit(ctx.blockcodestmt())]
-    
-    def visitBlockcodestmt(self, ctx:MiniGoParser.BlockcodestmtContext):
-        stmt = (
-            ctx.assigning_stmt()    or
-            ctx.var_decl()          or
-            ctx.const_decl()        or
-            ctx.assigning_stmt()    or
-            ctx.ifelse_stmt()       or
-            ctx.forloop_stmt()      or
-            ctx.continue_stmt()     or
-            ctx.return_stmt()       or
-            ctx.break_stmt()        or
-            ctx.funccall_stmt()     or
-            ctx.return_stmt()       
-        )
-        
-        return self.visit(stmt)
+        return [self.visit(ctx.stmt())]
     
     def visitData_type(self, ctx:MiniGoParser.Data_typeContext):
         if ctx.arridx_lst():
@@ -254,4 +332,5 @@ class ASTGeneration(MiniGoVisitor):
         else:
             return self.visit(ctx.getChild(0))
         
-        
+    def visitCompare_op(self, ctx:MiniGoParser.Compare_opContext):
+        return ctx.getChild(0).getText()
