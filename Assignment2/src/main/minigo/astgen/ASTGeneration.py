@@ -1,6 +1,6 @@
-from MiniGoVisitor import MiniGoVisitor
-from MiniGoParser import MiniGoParser
-from AST import *
+from target.MiniGoVisitor import MiniGoVisitor
+from target.MiniGoParser import MiniGoParser
+from utils.AST import *
 
 class ASTGeneration(MiniGoVisitor):
     def visitProgram(self,ctx:MiniGoParser.ProgramContext):
@@ -282,6 +282,21 @@ class ASTGeneration(MiniGoVisitor):
 
     def visitForloop_init(self, ctx:MiniGoParser.Forloop_initContext):
         return self.visit(ctx.withInit_var_decl() if ctx.withInit_var_decl() else ctx.assigning_stmt())
+
+    def visitBreak_stmt(self, ctx:MiniGoParser.Break_stmtContext):
+        return Break()
+    
+    def visitContinue_stmt(self, ctx:MiniGoParser.Continue_stmtContext):
+        return Continue()
+    
+    def visitFunccall_stmt(self, ctx:MiniGoParser.Funccall_stmtContext):
+        if ctx.expr6().tail() and ctx.expr6().tail().field_access_tail():
+            return MethCall(self.visit(ctx.expr6().expr6()),self.visit(ctx.expr6().tail()),self.visit(ctx.funccall_tail()))
+        
+        return FuncCall(self.visit(ctx.expr6()),self.visit(ctx.funccall_tail()))
+    
+    def visitReturn_stmt(self, ctx:MiniGoParser.Return_stmtContext):
+        return Return(self.visit(ctx.expr()) if ctx.expr() else None)
         
     def visitBlockcode(self, ctx:MiniGoParser.BlockcodeContext):
         return Block(self.visit(ctx.stmt_nnlst()))

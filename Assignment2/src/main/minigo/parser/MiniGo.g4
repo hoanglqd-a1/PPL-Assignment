@@ -131,7 +131,7 @@ continue_stmt: CONTINUE_ ;
 funccall_stmt: expr6 funccall_tail ;
 
 //* return statement */
-return_stmt: RETURN_ | RETURN_ expr ;
+return_stmt: RETURN_ expr? ;
 
 assign: uptassign | ASSIGN ;
 blockcode: LCB stmt_nnlst RCB ;
