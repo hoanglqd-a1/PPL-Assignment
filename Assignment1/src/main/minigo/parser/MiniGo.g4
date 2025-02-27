@@ -59,18 +59,25 @@ expr2: expr2 compare_op expr3 | expr3 ;
 expr3: expr3 ADD expr4 | expr3 SUB expr4 | expr4 ;
 expr4: expr4 MUL expr5 | expr4 DIV expr5 | expr4 MOD expr5 | expr5 ;
 expr5: NOT expr5 | SUB expr5 | expr6 ;
-expr6: expr6 tail | expr7 ; 
+expr6: expr6 field_access_tail 
+    | expr6 funccall_tail 
+    | expr7 
+    | expr6 field_access_tail arridx_nnlst 
+    | expr6 funccall_tail arridx_nnlst 
+    | expr7 arridx_nnlst
+    ; 
 expr7: LP expr RP | literal | ID ;
 
-tail: field_access_tail | arr_elem_access | funccall_tail ;
+tail: field_access_tail | funccall_tail ;
 field_access_tail: DOT ID ;
-arr_elem_access: LSB expr RSB ;
+arridx_nnlst: arridx arridx_nnlst | arridx ;
+arridx: LSB expr RSB ;
 funccall_tail: LP expr_lst RP ;
 expr_lst: expr_lstprime | ;
 expr_lstprime: expr COMMA expr_lstprime | expr ;
 
 //* left hand side */
-lhs: expr6 field_access_tail | expr6 arr_elem_access | ID;
+lhs: expr6 field_access_tail | expr6 arridx_nnlst | ID;
 
 //* var declare statement */
 var_decl: withInit_var_decl | withoutInit_var_decl ;
@@ -115,12 +122,11 @@ condition: LP expr RP ;
 
 //* for statement */
 forloop_stmt: FOR_ expr blockcode                                                       #ForBasic
-            | FOR_ forloop_init SEMICOLON expr SEMICOLON forloop_update blockcode       #ForStep
+            | FOR_ forloop_init SEMICOLON expr SEMICOLON assigning_stmt blockcode       #ForStep
             | FOR_ ID COMMA ID ASSIGN RANGE_ expr blockcode                             #ForEach
             ;
 
-forloop_init: VAR_ ID data_type? EQUAL expr | assigning_stmt ;
-forloop_update: ID uptassign expr ;
+forloop_init: withInit_var_decl | assigning_stmt ;
 
 //* break statement */
 break_stmt: BREAK_ ;
@@ -129,19 +135,17 @@ break_stmt: BREAK_ ;
 continue_stmt: CONTINUE_ ;
 
 //* call statement */
-funccall_stmt: expr6 funccall_tail ;
+funccall_stmt: ID funccall_tail | expr6 DOT ID funccall_tail ;
 
 //* return statement */
-return_stmt: RETURN_ | RETURN_ expr ;
+return_stmt: RETURN_ expr? ;
 
-assign: uptassign | ASSIGN ;
+assign: ASSIGN | ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
 blockcode: LCB stmt_nnlst RCB ;
 stmt_nnlst: stmt stmt_nnlst | stmt ;
 
 //* array literal */
-arr_literal: arridx_lst prime_datatype arrvalue ;
-arridx_lst: arridx arridx_lst | arridx ;
-arridx: LSB expr RSB ;
+arr_literal: arridx_nnlst prime_datatype arrvalue ;
 arrvalue: LCB arrelem_lst RCB ;
 arrelem_lst: arrelem COMMA arrelem_lst | arrelem ;
 arrelem: expr | arrvalue ;
@@ -152,11 +156,10 @@ structparam_lst: structparam_lstprime | ;
 structparam_lstprime: structparam COMMA structparam_lstprime | structparam ;
 structparam: ID COLON expr ;
 
-data_type: arridx_lst? prime_datatype ;
+data_type: arridx_nnlst? prime_datatype ;
 prime_datatype: primitive_datatype | ID ;
 primitive_datatype: INT_ | FLOAT_ | STRING_ | BOOLEAN_ ;
 literal: INTEGER | FLOAT | STRING | TRUE_ | FALSE_ | NIL_ | struct_literal | arr_literal ;
-uptassign: ADDASSIGN | SUBASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
 compare_op: EQCOM | DIFFCOM | LESSCOM | LEQCOM | GRECOM | GEQCOM ;
 end_stm: SEMICOLON | EOF;
 

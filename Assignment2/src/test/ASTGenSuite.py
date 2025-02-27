@@ -1,6 +1,6 @@
 import unittest
 from TestUtils import TestAST
-from main.minigo.utils.AST import *
+from AST import *
 
 class ASTGenSuite(unittest.TestCase):
     def test_simple_program(self):
