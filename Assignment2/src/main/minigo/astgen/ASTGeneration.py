@@ -367,11 +367,11 @@ class ASTGeneration(MiniGoVisitor):
         
     def visitLiteral(self, ctx:MiniGoParser.LiteralContext):
         if ctx.INTEGER():
-            return IntLiteral(int(ctx.INTEGER().getText()))
+            return IntLiteral(int(ctx.INTEGER().getText(),0))
         elif ctx.FLOAT():
             return FloatLiteral(float(ctx.FLOAT().getText()))
         elif ctx.STRING():
-            return StringLiteral(ctx.STRING().getText()[1:-1])
+            return StringLiteral(ctx.STRING().getText())
         elif ctx.TRUE_():
             return BooleanLiteral(True)
         elif ctx.FALSE_():

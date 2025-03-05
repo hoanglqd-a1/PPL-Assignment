@@ -33,7 +33,7 @@ decl_lst: decl decl_lst | decl ;
 
 
 decl: (
-    var_decl
+      var_decl
     | const_decl
     | func_decl 
     | struct_decl 
