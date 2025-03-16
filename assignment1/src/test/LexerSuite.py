@@ -446,3 +446,7 @@ class LexerSuite(unittest.TestCase):
         Dang doi tay noi co anh day roi\""""
         expect = """Unclosed string: \"Hinh nhu em yeu duoi can mot nguoi"""
         self.assertTrue(TestLexer.checkLexeme(input,expect,2004))
+    def test_000(self):
+        input = "01"
+        expect = "0,1,<EOF>"
+        self.assertTrue(TestLexer.checkLexeme(input,expect,2005))

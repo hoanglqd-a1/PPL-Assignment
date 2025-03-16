@@ -11,8 +11,8 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_more_complex_program(self):
         """More complex program"""
-        input = """var x int ;"""
-        expect = str(Program([VarDecl("x",IntType(),None)]))
+        input = """var x int = 100 ;"""
+        expect = str(Program([VarDecl("x",IntType(),IntLiteral(100))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,301))
     
     def test_call_without_parameter(self):
@@ -30,10 +30,10 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_constdecl0(self):
         """Constant declaration"""
-        input = """const x int = 100;"""
+        input = """const x = 100;"""
         expect = str(
             Program([
-                ConstDecl("x",IntType(),IntLiteral(100))
+                ConstDecl("x",VoidType(),IntLiteral(100))
             ])
         )
         self.assertTrue(TestAST.checkASTGen(input,expect,303))
@@ -132,7 +132,7 @@ class ASTGenSuite(unittest.TestCase):
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 312))
 
     def test_006(self):
-        input = """const ijk = function(a[2].b) + 10 """
+        input = """const ijk = function(a[2].b) + 10; """
         expect = Program([ConstDecl("ijk",None,BinaryOp("+",FuncCall("function",[FieldAccess(ArrayCell(Id("a"),[IntLiteral(2)]),"b")]),IntLiteral(10)))
 		])
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 313))
@@ -288,7 +288,7 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_022(self):
         """Constant declaration"""
-        input = """const x int = 100;"""
+        input = """const x = 100;"""
         expect = str(
             Program([
                 ConstDecl("x",IntType(),IntLiteral(100))
@@ -390,7 +390,7 @@ class ASTGenSuite(unittest.TestCase):
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 338))
 
     def test_032(self):
-        input = """const ijk = function(a[2].b) + 10 """
+        input = """const ijk = function(a[2].b) + 10; """
         expect = Program([ConstDecl("ijk",None,BinaryOp("+",FuncCall("function",[FieldAccess(ArrayCell(Id("a"),[IntLiteral(2)]),"b")]),IntLiteral(10)))
 		])
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 339))
@@ -546,7 +546,7 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_048(self):
         """Constant declaration"""
-        input = """const x int = 100;"""
+        input = """const x = 100;"""
         expect = str(
             Program([
                 ConstDecl("x",IntType(),IntLiteral(100))
@@ -648,7 +648,7 @@ class ASTGenSuite(unittest.TestCase):
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 364))
 
     def test_058(self):
-        input = """const ijk = function(a[2].b) + 10 """
+        input = """const ijk = function(a[2].b) + 10; """
         expect = Program([ConstDecl("ijk",None,BinaryOp("+",FuncCall("function",[FieldAccess(ArrayCell(Id("a"),[IntLiteral(2)]),"b")]),IntLiteral(10)))
 		])
         self.assertTrue(TestAST.checkASTGen(input, str(expect), 365))
@@ -804,7 +804,7 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_074(self):
         """Constant declaration"""
-        input = """const x int = 100;"""
+        input = """const x = 100;"""
         expect = str(
             Program([
                 ConstDecl("x",IntType(),IntLiteral(100))
@@ -906,7 +906,7 @@ class ASTGenSuite(unittest.TestCase):
         self.assertTrue(TestAST.checkASTGen(input, str(expect),390))
 
     def test_084(self):
-        input = """const ijk = function(a[2].b) + 10 """
+        input = """const ijk = function(a[2].b) + 10; """
         expect = Program([ConstDecl("ijk",None,BinaryOp("+",FuncCall("function",[FieldAccess(ArrayCell(Id("a"),[IntLiteral(2)]),"b")]),IntLiteral(10)))
 		])
         self.assertTrue(TestAST.checkASTGen(input, str(expect),391))
