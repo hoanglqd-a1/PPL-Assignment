@@ -104,7 +104,7 @@ class FuncDecl(Decl):
 @dataclass
 class MethodDecl(Decl):
     receiver: str
-    recType: Type 
+    recType: Type
     fun: FuncDecl
 
     def __str__(self):
