@@ -79,7 +79,7 @@ class VarDecl(Decl,BlockMember):
 @dataclass    
 class ConstDecl(Decl,BlockMember):
     conName : str
-    conType : Type # None if there is no type 
+    conType : Type # None if there is no type
     iniExpr : Expr
 
     def __str__(self):
