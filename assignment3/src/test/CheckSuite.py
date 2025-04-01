@@ -7,9 +7,18 @@ class CheckSuite(unittest.TestCase):
         input = """
         var a int; 
         const b float = 1.0;
+        struct StructB{
+            A StructA;
+            c float;
+        }
         func main(a int, b float){
-            var a float;
-            var b string;
+            var x float;
+            var y string;
+            var A StructA;
+        }
+        struct StructA{
+            a int;
+            b bool;
         }
         """
         expect = ""
