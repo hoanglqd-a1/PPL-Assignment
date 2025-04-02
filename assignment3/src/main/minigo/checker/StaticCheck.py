@@ -1,9 +1,9 @@
 """
  * @author nhphung
 """
-from AST import * 
-from Visitor import *
-from Utils import Utils
+from utils.AST import * 
+from utils.Visitor import *
+from utils.Utils import Utils
 from StaticError import *
 from functools import reduce
 
@@ -34,8 +34,7 @@ class Env:
         self.stage = stage
         self.scope = scope
     def add(self, x):
-        if x in [None, []]: return self
-        assert isinstance(x, Symbol)
+        if not isinstance(x, Symbol): return self
         return Env([x] + self.env, self.stage, self.scope)
 
 class StaticChecker(BaseVisitor,Utils):
@@ -98,7 +97,7 @@ class StaticChecker(BaseVisitor,Utils):
         res = self.lookup(ast.parName, c.env, getName)
         if res:
             raise Redeclared(Parameter(), ast.parName)
-        return Symbol(ast.parName, MType(None, ast.parType), ast, c.scope)
+        return Symbol(ast.parName, ast.parType, ast, c.scope)
     
     def visitMethodDecl(self, ast: MethodDecl, c: Env):
         if c.stage == 1:
@@ -108,8 +107,8 @@ class StaticChecker(BaseVisitor,Utils):
             if not (holder and isinstance(holder, StructType)):
                 raise Undeclared(Identifier(), ast.recType)
             
-            func = ast.fun      
-            if next(filter(lambda x: x.fun.name == ast.fun.name, holder.value.methods)):
+            func = ast.fun
+            if next(filter(lambda x: x.fun.name == ast.fun.name, holder.methods)):
                 raise Redeclared(Method(), ast.fun.name)
             
             paramlst = reduce(cumulative(self), func.params, Env([], 2, c.scope+1))
@@ -118,7 +117,7 @@ class StaticChecker(BaseVisitor,Utils):
             for retStmt in retStmts:
                 if retStmt.mtype != func.retType:
                     raise TypeMismatch(retStmt.value)
-            holder.value.methods.append(ast)
+            holder.methods.append(ast)
 
     def visitPrototype(self, ast, c: Env):
         res = self.lookup(ast.name, c.env, getName)
@@ -148,8 +147,7 @@ class StaticChecker(BaseVisitor,Utils):
     def visitInterfaceType(self, ast: InterfaceType, c: Env):
         res = self.lookup(ast.name, c.env, getName)
         if c.stage == 1:
-            if res:
-                raise Redeclared(InterfaceType(), ast.name)
+            if res: return
             return Symbol(ast.name, ast, ast, c.scope)
         
         elif c.stage == 2:
@@ -158,8 +156,7 @@ class StaticChecker(BaseVisitor,Utils):
     def visitStructType(self, ast: StructType, c: Env):
         res = self.lookup(ast.name, c.env, getName)
         if c.stage == 1:
-            if res:
-                raise Redeclared(StructType(), ast.name)
+            if res: return
             return Symbol(ast.name, ast, ast, c.scope)
             
         elif c.stage == 2:
@@ -175,15 +172,14 @@ class StaticChecker(BaseVisitor,Utils):
     
     def visitBlock(self, ast: Block, c: Env):
         # return reduce(cumulative(self), ast.member, Env(c.env, c.stage, c.scope+1))
+        c = Env(c.env, c.stage, c.scope+1)
         for stmt in ast.member:
-            try:
-                C = self.visit(stmt, c)
-                c.add(C)
-            except TypeMismatch as e:
-                if isinstance(e.err, FuncCall) and isinstance(stmt, FuncCall):
-                    continue
-                else:
-                    raise e        
+            if isinstance(stmt, FuncCall):
+                self.visitFuncCall(stmt, c, True)
+            elif isinstance(stmt, MethCall):
+                self.visitMethCall(stmt, c, True)
+            else:
+                c.add(self.visit(stmt, c))
     
     def visitAssign(self, ast: Assign, c: Env):
         rhs = self.visit(ast.rhs, c)
@@ -298,7 +294,7 @@ class StaticChecker(BaseVisitor,Utils):
             return typ
         return typ
     
-    def visitFuncCall(self, ast: FuncCall, c: Env):
+    def visitFuncCall(self, ast: FuncCall, c: Env, isVoid = False):
         func = self.lookup(ast.name, c.env, getName)
         if not func:
             raise Undeclared(Function(), ast.name)
@@ -307,9 +303,28 @@ class StaticChecker(BaseVisitor,Utils):
         for partype, arg in zip(func.mtype.partype, ast.args):
             if not self.matchType(partype, self.visit(arg, c)):
                 raise TypeMismatch(ast)
-        if func.mtype.rettype is VoidType():
+        if func.mtype.rettype is VoidType() and not isVoid:
+            raise TypeMismatch(ast)
+        if func.mtype.rettype is not VoidType() and isVoid:
             raise TypeMismatch(ast)
         return func.mtype.rettype
+    
+    def visitMethCall(self, ast: MethCall, c: Env, isVoid = False):
+        receiver = self.visit(ast.receiver)
+        if not isinstance(receiver, StructType):
+            raise TypeMismatch(ast)
+        meth = next(filter(lambda x: x.fun.name == ast.metName, receiver.methods))
+        func = meth.fun
+        if len(func.params) != len(ast.args):
+            raise TypeMismatch(ast)
+        for param, arg in zip(func.params, ast.args):
+            if not self.matchType(param.parType, self.visit(arg, c)):
+                raise TypeMismatch(ast)
+        if func.retType is VoidType() and not isVoid:
+            raise TypeMismatch(ast)
+        if func.retType is not VoidType() and isVoid:
+            raise TypeMismatch(ast)
+        return func.retType
     
     def visitIntLiteral(self,ast, c):
         return IntType()
@@ -325,6 +340,19 @@ class StaticChecker(BaseVisitor,Utils):
     
     def visitArrayLiteral(self, ast: ArrayLiteral, c):
         return ArrayType(ast.dimens, ast.eleType)
+    
+    def visitStructLiteral(self, ast: StructLiteral, c: Env):
+        res = self.lookup(ast.name, c.env, getName)
+        if not res:
+            raise Undeclared(StructType(), ast.name)
+        fieldlst = []
+        for f, typ in ast.elements:
+            if [f, self.visit(typ, c)] not in res.mtype.elements:
+                raise TypeMismatch(ast)
+            if f in fieldlst:
+                raise TypeMismatch(ast)
+            fieldlst.append(f)
+        return res.mtype
     
     def visitNilLiteral(self, ast: NilLiteral, c):
         return VoidType()
