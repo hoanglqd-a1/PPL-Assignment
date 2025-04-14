@@ -981,10 +981,61 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_093(self):
         input = """
-        func foo () {
-            for idx, arr := range [10]int{1,2} {return;}
+        func (b StructB) a (d int, e int) {
+            putInt(b.A.a);
+            putInt(d + e);
+            if (b.A.b) {
+                main(b.A.a, b.c, -100);
+            }
+            return
         }
-"""
+        var a int; 
+        const b float = 1.0;
+        type StructB struct {
+            A StructA;
+            c float;
+        }
+        func main(a int, b float, d int) {
+            var a float;
+            var c string;
+            var A InterfaceA = StructA{a: 10, b: true};
+            const B StructB = StructB{A: StructA{a: 10, b: true}, c: 1.0};
+            x := a + 10;
+            var y float = d * 10;
+            
+            return
+        }
+        type StructA struct {
+            a int;
+            b boolean;
+        }
+        func func0(a StructA) boolean {
+            if (a.a > 10) {
+                return a.b;
+            }
+            else if (a.a > 5) {
+                return 10 == 5;
+            }
+            else {
+                return a.a > 0;
+            }
+        }
+        func (a StructA) Add(a int, b int) int {
+            return 10
+        }
+        func (b StructA) Sub (d StructB, c StructA) {
+            c.Sub(d, b);
+            b.Sub(d, c);
+            return
+            putInt(d.A.Add(a, 10 * b.a));
+            d.A.Sub(d, b);
+            x := a + b.a;
+        }
+        type InterfaceA interface {
+            Add(a int, b int) int
+            Sub(b StructB, c StructA)
+        }
+        """
         expect = Program([FuncDecl("foo",[],VoidType(),Block([ForEach(Id("idx"),Id("arr"),ArrayLiteral([IntLiteral(10)],IntType(),[IntLiteral(1),IntLiteral(2)]),Block([Return(None)]))]))
 		])
         self.assertTrue(TestAST.checkASTGen(input, str(expect),400))
