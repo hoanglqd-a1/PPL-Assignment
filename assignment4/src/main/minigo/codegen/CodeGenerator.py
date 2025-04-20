@@ -54,7 +54,6 @@ class CodeGenerator(BaseVisitor,Utils):
         self.emit = Emitter(dir_ + "/" + self.className + ".j")
         self.visit(ast, gl)
        
-        
     def emitObjectInit(self):
         frame = Frame("<init>", VoidType())  
         self.emit.printout(self.emit.emitMETHOD("<init>", MType([], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
@@ -79,7 +78,6 @@ class CodeGenerator(BaseVisitor,Utils):
         self.emitObjectInit()
         self.emit.printout(self.emit.emitEPILOG())
         return env
-
 
     def visitFuncDecl(self, ast, o):
         frame = Frame(ast.name, ast.retType)
