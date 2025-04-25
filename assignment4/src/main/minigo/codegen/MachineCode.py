@@ -370,28 +370,28 @@ class JasminCode(MachineCode):
         if in_ >= 0 and in_ <= 3:
             return JasminCode.INDENT + "iload_" + str(in_) + JasminCode.END
         else:
-            return JasminCode.INDENT + "iload " +str(in_) + JasminCode.END
+            return JasminCode.INDENT + "iload " + str(in_) + JasminCode.END
     
     def emitFLOAD(self, in_):
         #in_: Int
         if in_ >= 0 and in_ <= 3:
             return JasminCode.INDENT + "fload_" + str(in_) + JasminCode.END
         else:
-            return JasminCode.INDENT + "fload " +str(in_) + JasminCode.END
+            return JasminCode.INDENT + "fload " + str(in_) + JasminCode.END
     
     def emitISTORE(self, in_):
         #in_: Int
         if in_ >= 0 and in_ <= 3:
             return JasminCode.INDENT + "istore_" + str(in_) + JasminCode.END
         else:
-            return JasminCode.INDENT + "istore " +str(in_) + JasminCode.END
+            return JasminCode.INDENT + "istore " + str(in_) + JasminCode.END
     
     def emitFSTORE(self, in_):
         #in_: Int
         if in_ >= 0 and in_ <= 3:
             return JasminCode.INDENT + "fstore_" + str(in_) + JasminCode.END
         else:
-            return JasminCode.INDENT + "fstore " +str(in_) + JasminCode.END
+            return JasminCode.INDENT + "fstore " + str(in_) + JasminCode.END
     
     def emitALOAD(self, in_):
         #in_: Int

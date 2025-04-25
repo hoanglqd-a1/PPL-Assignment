@@ -1,6 +1,17 @@
+# import os
+# import sys
+
+# path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# print(path)
+# sys.path.append(path)
+
+# from utils.Utils import *
+# from checker.StaticCheck import *
+# from checker.StaticError import *
 from Utils import *
 from StaticCheck import *
 from StaticError import *
+from CodeGenError import *
 import CodeGenerator as cgen
 from MachineCode import JasminCode
 
@@ -16,20 +27,23 @@ class Emitter():
         typeIn = type(inType)
         if typeIn is IntType:
             return "I"
+        elif typeIn is FloatType:
+            return "F"
+        elif typeIn is BoolType:
+            return "Z"
         elif typeIn is StringType:
             return "Ljava/lang/String;"
         elif typeIn is VoidType:
             return "V"
         elif typeIn is ArrayType:
-            return "[" + self.getJVMType(inType.eleType)
+            return "["*len(inType.dimens) + self.getJVMType(inType.eleType)
         elif typeIn is MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
         elif typeIn is cgen.ClassType:
             return "L" + inType.name + ";"
         else:
             return str(typeIn)
-
-    def getFullType(inType):
+    def getFullType(self, inType):
         typeIn = type(inType)
         if typeIn is IntType:
             return "int"
@@ -69,13 +83,26 @@ class Emitter():
         if rst == "0.0" or rst == "1.0" or rst == "2.0":
             return self.jvm.emitFCONST(rst)
         else:
-            return self.jvm.emitLDC(in_)           
+            return self.jvm.emitLDC(rst)           
 
     ''' 
     *    generate code to push a constant onto the operand stack.
     *    @param in the lexeme of the constant
     *    @param typ the type of the constant
     '''
+    def emitPUSHSTRCONST(self, in_, frame):
+        frame.push()
+        return self.jvm.emitLDC(in_)
+    
+    def emitPUSHARRAYCONST(self, in_, dimens_num, frame):
+        if dimens_num == 1:
+            frame.push()
+            frame.push()
+            return self.jvm.emitNEWARRAY(self.getFullType(in_))
+        else:
+            frame.push()
+            [frame.push() for _ in range(dimens_num)]
+            return self.jvm.emitMULTIANEWARRAY(self.getFullType(in_), dimens_num)
     def emitPUSHCONST(self, in_, typ, frame):
         #in_: String
         #typ: Type
@@ -102,7 +129,7 @@ class Emitter():
         elif type(in_) is cgen.ArrayType or type(in_) is cgen.ClassType or type(in_) is StringType:
             return self.jvm.emitAALOAD()
         else:
-            raise IllegalOperandException(str(in_))
+            raise IllegalOperandException(str(in_))        
 
     def emitASTORE(self, in_, frame):
         #in_: Type
@@ -146,6 +173,10 @@ class Emitter():
         frame.push()
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
+        elif type(inType) is FloatType:
+            return self.jvm.emitFLOAD(index)
+        elif type(inType) is BoolType:
+            return self.jvm.emitILOAD(index)
         elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
             return self.jvm.emitALOAD(index)
         else:
@@ -176,8 +207,14 @@ class Emitter():
         
         frame.pop()
 
-        if type(inType) is IntType:
+        if isinstance(inType, IntType):
             return self.jvm.emitISTORE(index)
+        elif isinstance(inType, FloatType):
+            return self.jvm.emitFSTORE(index)
+        elif isinstance(inType, BoolType):
+            return self.jvm.emitISTORE(index)
+        elif isinstance(inType, StringType):
+            return self.jvm.emitASTORE(index)
         elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
             return self.jvm.emitASTORE(index)
         else:
