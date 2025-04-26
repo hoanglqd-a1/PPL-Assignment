@@ -94,9 +94,9 @@ class Emitter():
         frame.push()
         return self.jvm.emitLDC(in_)
 
-    def emitPUSHSTRUCTLIT(self, name, field_type, elements, frame):
+    def emitPUSHSTRUCTLIT(self, name, elements, frame):
         frame.push()
-        return self.jvm.emitNEW(name) + self.emitDUP(frame) + elements + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType(field_type, VoidType())))
+        return self.jvm.emitNEW(name) + self.emitDUP(frame) + elements + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
 
     def emitPUSHARRAYCONST(self, in_, dimens_num, frame):
         if dimens_num == 1:
@@ -216,9 +216,7 @@ class Emitter():
             return self.jvm.emitFSTORE(index)
         elif isinstance(inType, BoolType):
             return self.jvm.emitISTORE(index)
-        elif isinstance(inType, StringType):
-            return self.jvm.emitASTORE(index)
-        elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
+        elif type(inType) in [cgen.ArrayType, cgen.ClassType, cgen.StringType]:
             return self.jvm.emitASTORE(index)
         else:
             raise IllegalOperandException(name)
@@ -338,8 +336,9 @@ class Emitter():
     *   @param in the type of the operands.
     '''
 
-    def emitINSTANCE(self, lexeme, in_, isFinal, value, frame):
+    def emitFIELD(self, lexeme, in_, isFinal, value, frame):
         return self.jvm.emitINSTANCEFIELD(lexeme, self.getJVMType(in_), isFinal, value)
+    
     def emitNEGOP(self, in_, frame):
         #in_: Type
         #frame: Frame
@@ -616,9 +615,12 @@ class Emitter():
         #in_: Type
         #frame: Frame
 
-        if type(in_) is IntType:
+        if type(in_) in [IntType, BoolType]:
             frame.pop()
             return self.jvm.emitIRETURN()
+        elif type(in_) is FloatType:
+            frame.pop()
+            return self.jvm.emitFRETURN()
         elif type(in_) is VoidType:
             return self.jvm.emitRETURN()
 
@@ -686,9 +688,3 @@ class Emitter():
 
     def clearBuff(self):
         self.buff.clear()
-
-
-
-
-
-        

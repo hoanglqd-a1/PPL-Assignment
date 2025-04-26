@@ -80,11 +80,10 @@ class CodeGenerator(BaseVisitor,Utils):
         self.visit(ast, gl)
 
     def emitObjectInit(self, elements, o: Control):
-        print(o.name)
         frame = Frame("<init>", VoidType())  
         emit = self.emit[o.name]
-        print(elements)
-        emit.printout(emit.emitMETHOD("<init>", MType([typ for _, typ in elements], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
+        # emit.printout(emit.emitMETHOD("<init>", MType([typ for _, typ in elements], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
+        emit.printout(emit.emitMETHOD("<init>", MType([], VoidType()), False, frame))
         frame.enterScope(True)
         o.frame = frame
         o = o.enterScope()
@@ -94,13 +93,13 @@ class CodeGenerator(BaseVisitor,Utils):
         emit.printout(emit.emitREADVAR("this", ClassType(o.name), 0, frame))
         emit.printout(emit.emitINVOKESPECIAL(frame))
 
-        for field, typ in elements:
-            index = frame.getNewIndex()
-            emit.printout(emit.emitVAR(index, field, typ, frame.getStartLabel(), frame.getEndLabel(), frame))
-            o.env[0].append(Symbol(field, typ, Index(index)))
-            emit.printout(emit.emitREADVAR("this", ClassType(o.name), 0, frame))
-            emit.printout(emit.emitREADVAR(field, typ, index, frame))
-            emit.printout(emit.emitPUTFIELD(o.name + "." + field, typ, o.frame))
+        # for field, typ in elements:
+        #     index = frame.getNewIndex()
+        #     emit.printout(emit.emitVAR(index, field, typ, frame.getStartLabel(), frame.getEndLabel(), frame))
+        #     o.env[0].append(Symbol(field, typ, Index(index)))
+        #     emit.printout(emit.emitREADVAR("this", ClassType(o.name), 0, frame))
+        #     emit.printout(emit.emitREADVAR(field, typ, index, frame))
+        #     emit.printout(emit.emitPUTFIELD(o.name + "." + field, typ, o.frame))
     
         emit.printout(emit.emitLABEL(frame.getEndLabel(), frame))
         emit.printout(emit.emitRETURN(VoidType(), frame))
@@ -191,15 +190,21 @@ class CodeGenerator(BaseVisitor,Utils):
                 # self.emit.printout(self.emit.emitPUSHICONST(ast.varInit.value, frame))
                 # self.emit.printout(self.emit.emitWRITEVAR(ast.varName, ast.varType, index,  frame))
                 varInitCode, varInitType = self.visit(ast.varInit, o)
-                emit.printout(varInitCode)
                 if not ast.varType:
                     ast.varType = varInitType
                     emit.printout(emit.emitVAR(index, ast.varName, ast.varType, frame.getStartLabel(), frame.getEndLabel(), frame))
+                emit.printout(varInitCode)
                 if isinstance(varInitType, IntType) and isinstance(ast.varType, FloatType):
                     emit.printout(emit.emitI2F(o.frame))
                 emit.printout(emit.emitWRITEVAR(ast.varName, ast.varType, index, frame))
                 if isinstance(varInitType, ArrayType) and isinstance(ast.varType, ArrayType) and isinstance(ast.varInit, ArrayLiteral):
                     emit.printout(self.writeArray(index, ast.varType, ast.varName, ast.varInit.value, o))
+                elif isinstance(varInitType, ClassType) and isinstance(ast.varInit, StructLiteral):
+                    for field, value in ast.varInit.elements:
+                        emit.printout(emit.emitREADVAR(ast.varName, ast.varType, index, o.frame))
+                        val, typ = self.visit(value, o)
+                        emit.printout(val)
+                        emit.printout(emit.emitPUTFIELD(ast.varInit.name + "." + field, typ, o.frame))
         return o
     
     def visitFuncCall(self, ast: FuncCall, o: Control):
@@ -248,7 +253,7 @@ class CodeGenerator(BaseVisitor,Utils):
         env = o.setName(ast.name)
         emit = self.emit[ast.name]
         emit.printout(emit.emitPROLOG(ast.name, "java.lang.Object"))
-        list(map(lambda x: emit.printout(emit.emitINSTANCE(x[0], x[1], False, None, env.frame)), ast.elements))
+        list(map(lambda x: emit.printout(emit.emitFIELD(x[0], x[1], False, None, env.frame)), ast.elements))
         self.emitObjectInit(ast.elements, env)
         emit.printout(emit.emitEPILOG())
         return o
@@ -256,7 +261,7 @@ class CodeGenerator(BaseVisitor,Utils):
     def visitId(self, ast: Id, o: Control):
         emit = self.emit[o.name]
         # sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
-        sym = next(filter(lambda x: x.name == ast.name, [j for i in o.env for j in i]),None)
+        sym = next(filter(lambda x: x.name == ast.name, [j for i in o.env for j in i]), None)
         if type(sym.value) is Index:
             return emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
         else:
@@ -282,9 +287,9 @@ class CodeGenerator(BaseVisitor,Utils):
         field_type = list(map(lambda x: x[1], sym.mtype.elements))
         emit = self.emit[o.name]
         code = ""
-        for field, value in ast.elements:
-            code += self.visit(value, o)[0]
-        return self.emit[o.name].emitPUSHSTRUCTLIT(ast.name, field_type, code, o.frame), ClassType(ast.name)
+        # for field, value in ast.elements:
+        #     code += self.visit(value, o)[0]
+        return self.emit[o.name].emitPUSHSTRUCTLIT(ast.name, code, o.frame), ClassType(ast.name)
     
     def visitArrayLiteral(self, ast: ArrayLiteral, o: Control):
         typ = ast.eleType
@@ -318,7 +323,11 @@ class CodeGenerator(BaseVisitor,Utils):
             code += self.visit(ele, o)[0]
             code += emit.emitASTORE(inType.eleType, o.frame)
         return code
-    
+        
+    def getElements(self, elements, o: Control):
+        if not isinstance(elements, list):
+            return self.visit(elements, o)[0]
+        return list(map([self.getElements(x, o)[0] for x in elements], elements))
     def getDimens(self, value):
         if not isinstance(value, list):
             return []
