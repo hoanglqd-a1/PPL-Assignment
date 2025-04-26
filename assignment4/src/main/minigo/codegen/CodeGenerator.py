@@ -272,6 +272,11 @@ class CodeGenerator(BaseVisitor,Utils):
                 return emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
             else:
                 return emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+        else:
+            if type(sym.value) is Index:
+                return emit.emitWRITEVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
+            else:
+                return emit.emitPUTSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
         
     def visitFieldAccess(self, ast: FieldAccess, o: Control):
         emit = self.emit[o.name]
