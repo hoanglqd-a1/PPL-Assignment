@@ -38,7 +38,6 @@ class Val(ABC):
 class Index(Val):
     def __init__(self, value):
         #value: Int
-
         self.value = value
 
 class CName(Val):
@@ -92,14 +91,6 @@ class CodeGenerator(BaseVisitor,Utils):
         emit.printout(emit.emitLABEL(frame.getStartLabel(), frame))
         emit.printout(emit.emitREADVAR("this", ClassType(o.name), 0, frame))
         emit.printout(emit.emitINVOKESPECIAL(frame))
-
-        # for field, typ in elements:
-        #     index = frame.getNewIndex()
-        #     emit.printout(emit.emitVAR(index, field, typ, frame.getStartLabel(), frame.getEndLabel(), frame))
-        #     o.env[0].append(Symbol(field, typ, Index(index)))
-        #     emit.printout(emit.emitREADVAR("this", ClassType(o.name), 0, frame))
-        #     emit.printout(emit.emitREADVAR(field, typ, index, frame))
-        #     emit.printout(emit.emitPUTFIELD(o.name + "." + field, typ, o.frame))
     
         emit.printout(emit.emitLABEL(frame.getEndLabel(), frame))
         emit.printout(emit.emitRETURN(VoidType(), frame))
@@ -183,7 +174,6 @@ class CodeGenerator(BaseVisitor,Utils):
         else:
             frame = o.frame
             index = frame.getNewIndex()
-            o.env[0].append(Symbol(ast.varName, ast.varType, Index(index)))
             if ast.varType:
                 emit.printout(emit.emitVAR(index, ast.varName, ast.varType, frame.getStartLabel(), frame.getEndLabel(), frame))  
             if ast.varInit:
@@ -205,11 +195,13 @@ class CodeGenerator(BaseVisitor,Utils):
                         val, typ = self.visit(value, o)
                         emit.printout(val)
                         emit.printout(emit.emitPUTFIELD(ast.varInit.name + "." + field, typ, o.frame))
+            if isinstance(ast.varType, StructType): ast.varType = ClassType(ast.varType.name)
+            o.env[0].append(Symbol(ast.varName, ast.varType, Index(index)))
         return o
     
     def visitFuncCall(self, ast: FuncCall, o: Control):
         emit = self.emit[o.name]
-        sym = next(filter(lambda x: x.name == ast.funName, o.env[-1]),None)
+        sym : Symbol = next(filter(lambda x: x.name == ast.funName, o.env[-1]),None)
         # env = o.copy()
         # env['isLeft'] = False
         env = o.setLeft(False)
@@ -224,6 +216,29 @@ class CodeGenerator(BaseVisitor,Utils):
         # [emit.printout(self.visit(x, env)[0]) for x in ast.args]
         # emit.printout(emit.emitINVOKESTATIC(f"{sym.value.value}/{ast.funName}",sym.mtype, o.frame))
         # return (o, sym.mtype.rettype) if not isinstance(sym.mtype.rettype, VoidType) else o
+
+    def visitIntType(self, ast: IntType, o: Control):
+        return IntType()
+    
+    def visitFloatType(self, ast: FloatType, o: Control):
+        return FloatType()
+    
+    def visitStringType(self, ast: StringType, o: Control):
+        return StringType()
+    
+    def visitBoolType(self, ast: BoolType, o: Control):
+        return BoolType()
+    
+    def visitStructType(self, ast: StructType, o: Control):
+        o.env[0].append(Symbol(ast.name, ast, CName(ast.name)))
+        self.emit[ast.name] = Emitter(self.path + "/" + ast.name + ".j")
+        env = o.setName(ast.name)
+        emit = self.emit[ast.name]
+        emit.printout(emit.emitPROLOG(ast.name, "java.lang.Object"))
+        list(map(lambda x: emit.printout(emit.emitFIELD(x[0], x[1], False, None, env.frame)), ast.elements))
+        self.emitObjectInit(ast.elements, env)
+        emit.printout(emit.emitEPILOG())
+        return o
     
     def visitBlock(self, ast: Block, o: Control):
         # env = o.copy()
@@ -247,25 +262,27 @@ class CodeGenerator(BaseVisitor,Utils):
             emit.printout(emit.emitRETURN(VoidType(), o.frame))
         return o
 
-    def visitStructType(self, ast: StructType, o: Control):
-        o.env[0].append(Symbol(ast.name, ast, CName(self.className)))
-        self.emit[ast.name] = Emitter(self.path + "/" + ast.name + ".j")
-        env = o.setName(ast.name)
-        emit = self.emit[ast.name]
-        emit.printout(emit.emitPROLOG(ast.name, "java.lang.Object"))
-        list(map(lambda x: emit.printout(emit.emitFIELD(x[0], x[1], False, None, env.frame)), ast.elements))
-        self.emitObjectInit(ast.elements, env)
-        emit.printout(emit.emitEPILOG())
-        return o
     
     def visitId(self, ast: Id, o: Control):
         emit = self.emit[o.name]
         # sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
         sym = next(filter(lambda x: x.name == ast.name, [j for i in o.env for j in i]), None)
-        if type(sym.value) is Index:
-            return emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
+        if not o.isLeft:
+            if type(sym.value) is Index:
+                return emit.emitREADVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
+            else:
+                return emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+        
+    def visitFieldAccess(self, ast: FieldAccess, o: Control):
+        emit = self.emit[o.name]
+        receiver, typ = self.visit(ast.receiver, o)
+        sym = next(filter(lambda x: x.name == typ.name, o.env[-1]), None)
+        fieldType = next(filter(lambda x: x[0] == ast.field, sym.mtype.elements), None)[1]
+        if isinstance(fieldType, StructType): fieldType = ClassType(fieldType.name)
+        if not o.isLeft:
+            return receiver + emit.emitGETFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
         else:
-            return emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+            return receiver + emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
 
     def visitIntLiteral(self, ast: IntLiteral, o: Control):
         return self.emit[o.name].emitPUSHICONST(ast.value, o.frame), IntType()
@@ -283,13 +300,7 @@ class CodeGenerator(BaseVisitor,Utils):
             return self.emit[o.name].emitPUSHICONST(0, o.frame), BoolType()
     
     def visitStructLiteral(self, ast: StructLiteral, o: Control):
-        sym = next(filter(lambda x: x.name == ast.name, o.env[-1]), None)
-        field_type = list(map(lambda x: x[1], sym.mtype.elements))
-        emit = self.emit[o.name]
-        code = ""
-        # for field, value in ast.elements:
-        #     code += self.visit(value, o)[0]
-        return self.emit[o.name].emitPUSHSTRUCTLIT(ast.name, code, o.frame), ClassType(ast.name)
+        return self.emit[o.name].emitPUSHSTRUCTLIT(ast.name, o.frame), ClassType(ast.name)
     
     def visitArrayLiteral(self, ast: ArrayLiteral, o: Control):
         typ = ast.eleType
@@ -328,6 +339,7 @@ class CodeGenerator(BaseVisitor,Utils):
         if not isinstance(elements, list):
             return self.visit(elements, o)[0]
         return list(map([self.getElements(x, o)[0] for x in elements], elements))
+    
     def getDimens(self, value):
         if not isinstance(value, list):
             return []

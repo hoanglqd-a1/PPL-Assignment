@@ -94,9 +94,9 @@ class Emitter():
         frame.push()
         return self.jvm.emitLDC(in_)
 
-    def emitPUSHSTRUCTLIT(self, name, elements, frame):
+    def emitPUSHSTRUCTLIT(self, name, frame):
         frame.push()
-        return self.jvm.emitNEW(name) + self.emitDUP(frame) + elements + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
+        return self.jvm.emitNEW(name) + self.emitDUP(frame) + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
 
     def emitPUSHARRAYCONST(self, in_, dimens_num, frame):
         if dimens_num == 1:
@@ -173,7 +173,6 @@ class Emitter():
         #index: Int
         #frame: Frame
         #... -> ..., value
-        
         frame.push()
         if type(inType) is IntType:
             return self.jvm.emitILOAD(index)
@@ -184,6 +183,7 @@ class Emitter():
         elif type(inType) is cgen.ArrayType or type(inType) is cgen.ClassType or type(inType) is StringType:
             return self.jvm.emitALOAD(index)
         else:
+            print(name, inType, index)
             raise IllegalOperandException(name)
 
     ''' generate the second instruction for array cell access
@@ -268,7 +268,7 @@ class Emitter():
         #lexeme: String
         #in_: Type
         #frame: Frame
-
+        print(lexeme)
         return self.jvm.emitGETFIELD(lexeme, self.getJVMType(in_))
 
     def emitPUTFIELD(self, lexeme, in_, frame):
