@@ -93,7 +93,11 @@ class Emitter():
     def emitPUSHSTRCONST(self, in_, frame):
         frame.push()
         return self.jvm.emitLDC(in_)
-    
+
+    def emitPUSHSTRUCTLIT(self, name, field_type, elements, frame):
+        frame.push()
+        return self.jvm.emitNEW(name) + self.emitDUP(frame) + elements + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType(field_type, VoidType())))
+
     def emitPUSHARRAYCONST(self, in_, dimens_num, frame):
         if dimens_num == 1:
             frame.push()
@@ -102,7 +106,7 @@ class Emitter():
         else:
             frame.push()
             [frame.push() for _ in range(dimens_num)]
-            return self.jvm.emitMULTIANEWARRAY(self.getFullType(in_), dimens_num)
+            return self.jvm.emitMULTIANEWARRAY("["*dimens_num + self.getJVMType(in_), str(dimens_num))
     def emitPUSHCONST(self, in_, typ, frame):
         #in_: String
         #typ: Type
@@ -206,7 +210,6 @@ class Emitter():
         #..., value -> ...
         
         frame.pop()
-
         if isinstance(inType, IntType):
             return self.jvm.emitISTORE(index)
         elif isinstance(inType, FloatType):
@@ -334,6 +337,9 @@ class Emitter():
     *   generate ineg, fneg.
     *   @param in the type of the operands.
     '''
+
+    def emitINSTANCE(self, lexeme, in_, isFinal, value, frame):
+        return self.jvm.emitINSTANCEFIELD(lexeme, self.getJVMType(in_), isFinal, value)
     def emitNEGOP(self, in_, frame):
         #in_: Type
         #frame: Frame
@@ -648,9 +654,9 @@ class Emitter():
         result = list()
         result.append(self.jvm.emitSOURCE(name + ".java"))
         result.append(self.jvm.emitCLASS("public " + name))
-        result.append(self.jvm.emitSUPER("java/land/Object" if parent == "" else parent))
+        result.append(self.jvm.emitSUPER("java/lang/Object" if parent == "" else parent))
         return ''.join(result)
-
+    
     def emitLIMITSTACK(self, num):
         #num: Int
 
@@ -663,7 +669,11 @@ class Emitter():
 
     def emitEPILOG(self):
         file = open(self.filename, "w")
-        file.write(''.join(self.buff))
+        try:
+            file.write(''.join(self.buff))
+        except Exception as e:
+            print(self.buff)
+            raise e
         file.close()
 
     ''' print out the code to screen

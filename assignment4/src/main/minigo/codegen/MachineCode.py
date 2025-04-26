@@ -665,7 +665,7 @@ class JasminCode(MachineCode):
         else:
             return ".field static " + lexeme + " " + typ + ((" = " + value) if value else "") + JasminCode.END
     
-    def emitINSTANCEFIELD(self, lexeme, typ,isFinal,value):
+    def emitINSTANCEFIELD(self, lexeme, typ, isFinal, value):
         #lexeme: String
         #typ: String
         if isFinal:

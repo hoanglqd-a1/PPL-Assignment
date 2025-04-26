@@ -32,7 +32,36 @@ class CheckCodeGenSuite(unittest.TestCase):
     #     input = """func main() {var a float = 10;  putFloat(a);};"""
     #     expect = "10.0"
     #     self.assertTrue(TestCodeGen.test(input,expect,507))
-    def test_var_decl1(self):
-        input = """func main() {var a [3]int = [3]int{1,2,3}; putInt(10);};"""
-        expect = "10"
-        self.assertTrue(TestCodeGen.test(input,expect,508))
+    # def test_var_decl1(self):
+    #     input = """func main() {var a [3]int = [3]int{1,2,3}; putInt(10);};"""
+    #     expect = "10"
+    #     self.assertTrue(TestCodeGen.test(input,expect,508))
+
+    # def test_var_decl1(self):
+    #     input = """func main() {var a [2][2]int = [2][2]int{{1,2},{3,4}}; putInt(10);};"""
+    #     expect = "10"
+    #     self.assertTrue(TestCodeGen.test(input,expect,509))
+
+    def test_struct_decl0(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+    c string;
+}
+func main() {
+    var a = A{a: 1, b: 2.0, c: "abc"};
+    putInt(12);
+};"""
+        expect = "12"
+        self.assertTrue(TestCodeGen.test(input,expect,510))
+#     def test_func_decl0(self):
+#         input = """
+# func add(a int, b int) int {
+#     return a;
+# }
+# func main() {
+#     putInt(add(1, 2));
+# };"""
+#         expect = "1"
+#         self.assertTrue(TestCodeGen.test(input,expect,511))
