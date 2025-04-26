@@ -139,24 +139,32 @@ class CodeGenerator(BaseVisitor,Utils):
         return o
     
     def visitMethodDecl(self, ast: MethodDecl, o: Control):
-        emit = self.emit[o.name]
+        env = o.setName(ast.recType.name)
+        emit = self.emit[env.name]
         func = ast.fun
+        recType = ClassType(next(filter(lambda x: x.name == ast.recType.name, o.env[-1]), None).mtype.name)
         mtype = MType(list(map(lambda x: x.parType, func.params)), func.retType)
-        o.env[0].append(Symbol(func.name, mtype, CName(ast.recType.name)))
-        env = o.enterScope()
         env.frame = Frame(func.name, func.retType)
-        emit.printout(emit.emitMETHOD(func.name, mtype, False, env.frame))
+        emit.printout(emit.emitMETHOD(func.name, mtype, False, o.frame))
         env.frame.enterScope(True)
+        env = env.enterScope()
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         index = env.frame.getNewIndex()
-        o.env[0].append(Symbol(ast.receiver, ast.recType, Index(index)))
+        env.env[0].append(Symbol(ast.receiver, recType, Index(index)))
+        emit.printout(emit.emitVAR(index, ast.receiver, recType, env.frame.getStartLabel(), env.frame.getEndLabel(), env.frame))
+        env.frame.enterScope(True)
+        env = env.enterScope()
+        emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         env = reduce(lambda acc, e: self.visit(e, acc), func.params, env)
         self.visit(func.body, env)
         emit.printout(emit.emitLABEL(env.frame.getEndLabel(), env.frame))
+        env.frame.exitScope()
         if type(func.retType) is VoidType:
             emit.printout(emit.emitRETURN(VoidType(), env.frame))
+        emit.printout(emit.emitLABEL(env.frame.getEndLabel(), env.frame))
         emit.printout(emit.emitENDMETHOD(env.frame))
         env.frame.exitScope()
+        emit.emitEPILOG()
         return o
     
     def visitParamDecl(self, ast: ParamDecl, o: Control):
@@ -237,12 +245,10 @@ class CodeGenerator(BaseVisitor,Utils):
         emit.printout(emit.emitPROLOG(ast.name, "java.lang.Object"))
         list(map(lambda x: emit.printout(emit.emitFIELD(x[0], x[1], False, None, env.frame)), ast.elements))
         self.emitObjectInit(ast.elements, env)
-        emit.printout(emit.emitEPILOG())
+        emit.emitEPILOG()
         return o
     
     def visitBlock(self, ast: Block, o: Control):
-        # env = o.copy()
-        # env['env'] = [[]] + env['env']
         emit = self.emit[o.name]
         env = o.enterScope()
         env.frame.enterScope(False)
@@ -262,7 +268,6 @@ class CodeGenerator(BaseVisitor,Utils):
             emit.printout(emit.emitRETURN(VoidType(), o.frame))
         return o
 
-    
     def visitId(self, ast: Id, o: Control):
         emit = self.emit[o.name]
         # sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
