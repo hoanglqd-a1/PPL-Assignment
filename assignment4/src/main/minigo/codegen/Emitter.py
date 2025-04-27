@@ -41,6 +41,8 @@ class Emitter():
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
         elif typeIn is cgen.ClassType:
             return "L" + inType.name + ";"
+        elif typeIn is StructType:
+            return self.getJVMType(cgen.ClassType(inType.name))
         else:
             return str(typeIn)
     def getFullType(self, inType):
@@ -268,7 +270,6 @@ class Emitter():
         #lexeme: String
         #in_: Type
         #frame: Frame
-        print(lexeme)
         return self.jvm.emitGETFIELD(lexeme, self.getJVMType(in_))
 
     def emitPUTFIELD(self, lexeme, in_, frame):
@@ -621,8 +622,13 @@ class Emitter():
         elif type(in_) is FloatType:
             frame.pop()
             return self.jvm.emitFRETURN()
+        elif type(in_) in [cgen.ArrayType, cgen.ClassType, StringType]:
+            frame.pop()
+            return self.jvm.emitARETURN()
         elif type(in_) is VoidType:
             return self.jvm.emitRETURN()
+        else:
+            raise IllegalOperandException(str(in_))
 
     ''' generate code that represents a label	
     *   @param label the label
@@ -642,7 +648,7 @@ class Emitter():
         #label: Int
         #frame: Frame
 
-        return self.jvm.emitGOTO(label)
+        return self.jvm.emitGOTO(str(label))
 
     ''' generate some starting directives for a class.<p>
     *   .source MPC.CLASSNAME.java<p>
