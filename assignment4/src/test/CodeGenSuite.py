@@ -35,12 +35,10 @@ class CheckCodeGenSuite(unittest.TestCase):
         input = """func main() {var a [3]int = [3]int{1,2,3}; putInt(10);};"""
         expect = "10"
         self.assertTrue(TestCodeGen.test(input,expect,508))
-
     def test_var_decl2(self):
         input = """func main() {var a [2][2]int = [2][2]int{{1,2},{3,4}}; putInt(10);};"""
         expect = "10"
         self.assertTrue(TestCodeGen.test(input,expect,509))
-
     def test_struct_decl0(self):
         input = """
 type A struct {
@@ -130,7 +128,6 @@ func main() {
 10
 abc"""
         self.assertTrue(TestCodeGen.test(input,expect,515))
-    
     def test_method_call1(self):
         input = """
 type A struct {
@@ -151,7 +148,6 @@ func main() {
 };"""
         expect = "1 10.0 abc"
         self.assertTrue(TestCodeGen.test(input,expect,516))
-    
     def test_interface_decl0(self):
         input = """
 type A interface {
@@ -194,3 +190,90 @@ func main() {
 };"""
         expect = "12"
         self.assertTrue(TestCodeGen.test(input,expect,518))
+    def test_constant_decl0(self):
+        input = """
+const b float = 10.0
+func main() {
+    const a int = 10;
+    putInt(a);
+    putFloat(b);
+};"""
+        expect = "1010.0"
+        self.assertTrue(TestCodeGen.test(input,expect,519))
+    def test_assignment0(self):
+        input = """
+func main() {
+    var a int;
+    a := 10;
+    putInt(a);
+}"""
+        expect = "10"
+        self.assertTrue(TestCodeGen.test(input,expect,520))
+    def test_assignment1(self):
+        input = """
+func main() {
+    var a [3]int;
+    a := [3]int{1,2,3};
+}"""
+        expect = ""
+        self.assertTrue(TestCodeGen.test(input,expect,521))
+    def test_assignment2(self):
+        input = """
+type A struct {
+    a int;
+}
+func main() {
+    var a = A{a: 10};
+    a := A{a: 300};
+    putInt(a.a);
+    a.a := 4;
+    putInt(a.a);
+}"""
+        expect = "3004"
+        self.assertTrue(TestCodeGen.test(input,expect,522))
+    def test_constant_decl1(self):
+        input = """
+type A struct {
+    a int;
+}
+func main() {
+    const a A = A{a: 1975};
+    putInt(a.a);
+}"""
+        expect = "1975"
+        self.assertTrue(TestCodeGen.test(input,expect,523))
+    def test_array_cell0(self):
+        input = """
+func main() {
+    var a [3]int;
+    a := [3]int{30,4,1975};
+    putInt(a[1]);
+}"""
+        expect = "4"
+        self.assertTrue(TestCodeGen.test(input,expect,524))
+    def test_array_cell1(self):
+        input = """
+func main() {
+    var a [3]int;
+    a := [3]int{30,3,1975};
+    a[1] := 4;
+    putInt(a[0]);
+    putString("/");
+    putInt(a[1]);
+    putString("/");
+    putInt(a[2]);
+}"""
+        expect = "30/4/1975"
+        self.assertTrue(TestCodeGen.test(input,expect,525))
+    def test_array_cell2(self):
+        input = """
+func main() {
+    var a [2][2] int;
+    a := [2][2]int{{2,2},{3,4}};
+    putInt(a[0][0]);
+    a[0][1] := 9;
+    putString("/");
+    putInt(a[0][1]);
+}"""
+        expect = "2/9"
+        self.assertTrue(TestCodeGen.test(input,expect,526))

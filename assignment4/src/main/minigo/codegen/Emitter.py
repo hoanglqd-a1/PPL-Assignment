@@ -39,14 +39,11 @@ class Emitter():
             return "["*len(inType.dimens) + self.getJVMType(inType.eleType)
         elif typeIn is MType:
             return "(" + "".join(list(map(lambda x: self.getJVMType(x), inType.partype))) + ")" + self.getJVMType(inType.rettype)
-        elif typeIn is cgen.ClassType:
+        elif typeIn in [cgen.ClassType, StructType, InterfaceType]:
             return "L" + inType.name + ";"
-        elif typeIn is StructType:
-            return self.getJVMType(cgen.ClassType(inType.name))
-        elif typeIn is InterfaceType:
-            return self.getJVMType(cgen.ClassType(inType.name))
         else:
             return str(typeIn)
+        
     def getFullType(self, inType):
         typeIn = type(inType)
         if typeIn is IntType:

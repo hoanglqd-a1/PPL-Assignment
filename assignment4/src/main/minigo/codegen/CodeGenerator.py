@@ -87,7 +87,6 @@ class CodeGenerator(BaseVisitor,Utils):
         emit = self.emit[o.name]
         o = o.newFrame("<init>", VoidType())
         frame = o.frame
-        # emit.printout(emit.emitMETHOD("<init>", MType([typ for _, typ in elements], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
         emit.printout(emit.emitMETHOD("<init>", MType([], VoidType()), False, frame))
         o = o.enterScope(True)
         emit.printout(emit.emitVAR(frame.getNewIndex(), "this", ClassType(o.name), frame.getStartLabel(), frame.getEndLabel(), frame))  # Tạo biến "this" trong phương thức <init>
@@ -123,7 +122,7 @@ class CodeGenerator(BaseVisitor,Utils):
             mtype = MType(list(map(lambda x: x.parType, ast.params)), ast.retType)
         env.env[0].append(Symbol(ast.name, mtype, CName(self.className)))
         env = env.enterScope(True)
-        emit.printout(emit.emitMETHOD(ast.name, mtype,True, env.frame))
+        emit.printout(emit.emitMETHOD(ast.name, mtype, True, env.frame))
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         if isMain:
             emit.printout(emit.emitVAR(env.frame.getNewIndex(), "args", ArrayType([None],StringType()), env.frame.getStartLabel(), env.frame.getEndLabel(), env.frame))
@@ -167,12 +166,13 @@ class CodeGenerator(BaseVisitor,Utils):
         env.frame.exitScope()
         emit.emitEPILOG()
         return o
-    
+
     def visitParamDecl(self, ast: ParamDecl, o: Control):
         emit = self.emit[o.name]
         index = o.frame.getNewIndex()
-        emit.printout(emit.emitVAR(index, ast.parName, ast.parType, o.frame.getStartLabel(), o.frame.getEndLabel(), o.frame))
-        o.env[0].append(Symbol(ast.parName, ast.parType, Index(index)))
+        parType = self.visit(ast.parType, o)
+        emit.printout(emit.emitVAR(index, ast.parName, parType, o.frame.getStartLabel(), o.frame.getEndLabel(), o.frame))
+        o.env[0].append(Symbol(ast.parName, parType, Index(index)))
         return o
 
     def visitVarDecl(self, ast: VarDecl, o: Control):
@@ -187,8 +187,6 @@ class CodeGenerator(BaseVisitor,Utils):
             if ast.varType:
                 emit.printout(emit.emitVAR(index, ast.varName, varType, frame.getStartLabel(), frame.getEndLabel(), frame))
             if ast.varInit:
-                # self.emit.printout(self.emit.emitPUSHICONST(ast.varInit.value, frame))
-                # self.emit.printout(self.emit.emitWRITEVAR(ast.varName, ast.varType, index,  frame))
                 varInitCode, varInitType = self.visit(ast.varInit, o.setLeft(False))
                 if not varType:
                     emit.printout(emit.emitVAR(index, ast.varName, varInitType, frame.getStartLabel(), frame.getEndLabel(), frame))
@@ -198,15 +196,38 @@ class CodeGenerator(BaseVisitor,Utils):
                 if isinstance(varInitType, IntType) and isinstance(varType, FloatType):
                     emit.printout(emit.emitI2F(o.frame))
                 emit.printout(emit.emitWRITEVAR(ast.varName, varType, index, frame))
-                if isinstance(varInitType, ArrayType) and isinstance(varType, ArrayType) and isinstance(ast.varInit, ArrayLiteral):
-                    emit.printout(self.writeArray(index, varType, ast.varName, ast.varInit.value, o))
-                elif isinstance(varInitType, ClassType) and isinstance(ast.varInit, StructLiteral):
-                    for field, value in ast.varInit.elements:
-                        emit.printout(emit.emitREADVAR(ast.varName, varType, index, o.frame))
-                        val, typ = self.visit(value, o)
-                        emit.printout(val)
-                        emit.printout(emit.emitPUTFIELD(ast.varInit.name + "." + field, typ, o.frame))
             o.env[0].append(Symbol(ast.varName, varType, Index(index)))
+            if ast.varInit:
+                if isinstance(varInitType, ArrayType) and isinstance(varType, ArrayType) and isinstance(ast.varInit, ArrayLiteral):
+                    emit.printout(self.writeArray(Id(ast.varName), ast.varInit, o))
+                elif isinstance(varInitType, ClassType) and isinstance(ast.varInit, StructLiteral):
+                    emit.printout(self.writeStruct(Id(ast.varName), ast.varInit, o))
+        return o
+    
+    def visitConstDecl(self, ast: ConstDecl, o: Control):
+        emit = self.emit[o.name]
+        if not o.frame: # global var
+            o.env[0].append(Symbol(ast.conName, self.visit(ast.conType, o), CName(self.className)))
+            emit.printout(emit.emitATTRIBUTE(ast.conName, ast.conType, True, True, str(ast.iniExpr.value) if ast.iniExpr else None))
+        else:
+            frame = o.frame
+            index = frame.getNewIndex()
+            varType = self.visit(ast.conType, o) if ast.conType else None
+            varInitCode, varInitType = self.visit(ast.iniExpr, o.setLeft(False))
+            emit.printout(emit.emitVAR(index, ast.conName, varType if varType else varInitType, frame.getStartLabel(), frame.getEndLabel(), frame))
+            if not varType or isinstance(varType, ClassType):
+                varType = varInitType
+            emit.printout(varInitCode)
+            if isinstance(varInitType, IntType) and isinstance(varType, FloatType):
+                emit.printout(emit.emitI2F(o.frame))
+            emit.printout(emit.emitWRITEVAR(ast.conName, varType, index, frame))
+            o.env[0].append(Symbol(ast.conName, varType, Index(index)))
+            if isinstance(varInitType, ArrayType) and isinstance(varType, ArrayType) and isinstance(ast.iniExpr, ArrayLiteral):
+                # readVar = emit.emitREADVAR(ast.conName, varType, index, o.frame)
+                # emit.printout(self.writeArray(readVar, varType, ast.conName, ast.iniExpr.value, o))
+                emit.printout(self.writeArray(Id(ast.conName), ast.iniExpr, o))
+            elif isinstance(varInitType, ClassType) and isinstance(ast.iniExpr, StructLiteral):
+                emit.printout(self.writeStruct(Id(ast.conName), ast.iniExpr, o))
         return o
     
     def visitFuncCall(self, ast: FuncCall, o: Control):
@@ -287,6 +308,38 @@ class CodeGenerator(BaseVisitor,Utils):
         env.frame.exitScope()
         return o
     
+    def visitAssign(self, ast: Assign, o: Control):
+        emit = self.emit[o.name]
+        _, rtype = self.visit(ast.rhs, o.setLeft(False))
+        if isinstance(ast.lhs, Id) and next(filter(lambda x: x.name == ast.lhs.name, [j for i in o.env for j in i]), None) is None:
+            index = o.frame.getNewIndex()
+            emit.printout(emit.emitVAR(index, ast.lhs.name, rtype, o.frame.getStartLabel(), o.frame.getEndLabel(), o.frame))
+            o.env[0].append(Symbol(ast.lhs.name, rtype, Index(index)))
+        emit.printout(self.assign(ast.lhs, ast.rhs, o))
+        if isinstance(rtype, ArrayType) and isinstance(ast.rhs, ArrayLiteral):
+            emit.printout(self.writeArray(ast.lhs, ast.rhs, o))
+        elif isinstance(rtype, ClassType) and isinstance(ast.rhs, StructLiteral):
+            emit.printout(self.writeStruct(ast.lhs, ast.rhs, o))
+        return o
+
+    def visitIf(self, ast: If, o: Control):
+        pass
+
+    def visitForBasic(self, ast: ForBasic, o: Control):
+        pass
+
+    def visitForStep(self, ast: ForStep, o: Control):
+        pass
+
+    def visitForEach(self, ast: ForEach, o: Control):
+        pass
+
+    def visitBreak(self, ast: Break, o: Control):
+        pass 
+
+    def visitContinue(self, ast: Continue, o: Control):
+        pass
+
     def visitReturn(self, ast: Return, o: Control):
         emit = self.emit[o.name]
         if ast.expr:
@@ -312,20 +365,39 @@ class CodeGenerator(BaseVisitor,Utils):
                 return emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
         else:
             if type(sym.value) is Index:
-                return emit.emitWRITEVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
+                return "", emit.emitWRITEVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
             else:
-                return emit.emitPUTSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+                return "", emit.emitPUTSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+            
+    def visitArrayCell(self, ast: ArrayCell, o: Control):
+        emit = self.emit[o.name]
+        arr, typ = self.visit(ArrayCell(ast.arr, ast.idx[:-1]), o.setLeft(False)) if len(ast.idx) > 1 else self.visit(ast.arr, o.setLeft(False))
+        index, _ = self.visit(ast.idx[-1], o.setLeft(False))
+        cellType = ArrayType(typ.dimens[1:], typ.eleType) if len(typ.dimens) > 1 else typ.eleType
+        if o.isLeft:
+            return arr + index, emit.emitASTORE(cellType, o.frame), cellType
+        else:
+            return arr + index + emit.emitALOAD(cellType, o.frame), cellType
+
+
         
     def visitFieldAccess(self, ast: FieldAccess, o: Control):
         emit = self.emit[o.name]
-        receiver, typ = self.visit(ast.receiver, o)
+        receiver, typ = self.visit(ast.receiver, o.setLeft(False))
+        assert isinstance(typ, ClassType), "Logical error"
         sym = next(filter(lambda x: x.name == typ.name, o.env[-1]), None)
         fieldType = next(filter(lambda x: x[0] == ast.field, sym.mtype.elements), None)[1]
         if isinstance(fieldType, StructType): fieldType = ClassType(fieldType.name)
         if not o.isLeft:
             return receiver + emit.emitGETFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
         else:
-            return receiver + emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
+            return receiver, emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
+        
+    def visitBinaryOp(self, ast: BinaryOp, o: Control):
+        pass
+
+    def visitUnaryOp(self, ast: UnaryOp, o: Control):
+        pass
 
     def visitIntLiteral(self, ast: IntLiteral, o: Control):
         return self.emit[o.name].emitPUSHICONST(ast.value, o.frame), IntType()
@@ -350,34 +422,28 @@ class CodeGenerator(BaseVisitor,Utils):
         dimens_code = reduce(lambda acc, ele: acc + self.visit(ele, o)[0], ast.dimens, "")
         return dimens_code + self.emit[o.name].emitPUSHARRAYCONST(typ, len(ast.dimens), o.frame), ArrayType(ast.dimens, typ)
     
-    def writeArray(self, index, inType: ArrayType, name, value, o: Control):
-        emit = self.emit[o.name]
+    def visitNilLiteral(self, ast: NilLiteral, o: Control):
+        return self.emit[o.name].emitPUSHNIL(o.frame), VoidType()
+    
+    def writeArray(self, lhs, rhs: ArrayLiteral, o: Control):
         code = ""
-        dimens = self.getDimens(value)
+        dimens = self.getDimens(rhs.value)
         eleNum = reduce(lambda acc, ele: acc * ele, dimens, 1)
         for i in range(eleNum):
             indicesLst = []
-            DIV = 1
+            DIV = 1        
             for j in reversed(dimens):
                 DIV *= j
                 indicesLst.append(i % DIV)
                 i //= DIV
             indicesLst.reverse()
-            code += emit.emitREADVAR(name, inType, index, o.frame)
-            # code = reduce(lambda acc, ele: acc + self.emit.emitPUSHICONST(ele, o.frame) + self.emit.jvm.emitAALOAD(), indicesLst[:-1], code)
-            
-            for j in range(len(indicesLst) - 1):
-                code += emit.emitPUSHICONST(indicesLst[j], o.frame)
-                code += emit.emitALOAD(ArrayType([inType.dimens[j+1:]], inType.eleType), o.frame)
-            
-            code += emit.emitPUSHICONST(indicesLst[-1], o.frame)
-            ele = value
+            ele = rhs.value
             for idx in indicesLst:
                 ele = ele[idx]
-            code += self.visit(ele, o)[0]
-            code += emit.emitASTORE(inType.eleType, o.frame)
+            indicesLst = list(map(lambda x: IntLiteral(x), indicesLst))
+            code += self.assign(ArrayCell(lhs, indicesLst), ele, o)
         return code
-        
+    
     def getElements(self, elements, o: Control):
         if not isinstance(elements, list):
             return self.visit(elements, o)[0]
@@ -388,3 +454,15 @@ class CodeGenerator(BaseVisitor,Utils):
             return []
         return [len(value)] + self.getDimens(value[0])
     
+    def writeStruct(self, lhs, rhs: StructLiteral, o: Control):
+        code = ""
+        for field, value in rhs.elements:
+            code += self.assign(FieldAccess(lhs, field), value, o)
+        return code
+    
+    def assign(self, lhs, rhs, o: Control):
+        emit = self.emit[o.name]
+        loadrhs, rtype = self.visit(rhs, o.setLeft(False))
+        loadlhs, storelhs, ltype = self.visit(lhs, o.setLeft(True))
+        i2f = emit.emitI2F(o.frame) if isinstance(ltype, FloatType) and isinstance(rtype, IntType) else ""
+        return loadlhs + loadrhs + i2f + storelhs
