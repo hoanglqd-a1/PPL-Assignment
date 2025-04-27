@@ -43,6 +43,8 @@ class Emitter():
             return "L" + inType.name + ";"
         elif typeIn is StructType:
             return self.getJVMType(cgen.ClassType(inType.name))
+        elif typeIn is InterfaceType:
+            return self.getJVMType(cgen.ClassType(inType.name))
         else:
             return str(typeIn)
     def getFullType(self, inType):
@@ -221,6 +223,7 @@ class Emitter():
         elif type(inType) in [cgen.ArrayType, cgen.ClassType, cgen.StringType]:
             return self.jvm.emitASTORE(index)
         else:
+            print(inType)
             raise IllegalOperandException(name)
 
     ''' generate the second instruction for array cell access

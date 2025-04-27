@@ -25,7 +25,12 @@ class Control:
         self.name = name
         self.frame = frame
         self.isLeft = isLeft
-    def enterScope(self):
+    def newFrame(self, name, retType):
+        if self.frame is not None:
+            raise Exception("Logical error")
+        return Control(self.env, self.name, Frame(name, retType), self.isLeft)
+    def enterScope(self, isProc):
+        self.frame.enterScope(isProc)
         return Control([[]] + self.env, self.name, self.frame, self.isLeft)
     def setLeft(self, isLeft):
         return Control(self.env, self.name, self.frame, isLeft)
@@ -79,13 +84,12 @@ class CodeGenerator(BaseVisitor,Utils):
         self.visit(ast, gl)
 
     def emitObjectInit(self, o: Control):
-        frame = Frame("<init>", VoidType())  
         emit = self.emit[o.name]
+        o = o.newFrame("<init>", VoidType())
+        frame = o.frame
         # emit.printout(emit.emitMETHOD("<init>", MType([typ for _, typ in elements], VoidType()), False, frame))  # Bắt đầu định nghĩa phương thức <init>
         emit.printout(emit.emitMETHOD("<init>", MType([], VoidType()), False, frame))
-        frame.enterScope(True)
-        o.frame = frame
-        o = o.enterScope()
+        o = o.enterScope(True)
         emit.printout(emit.emitVAR(frame.getNewIndex(), "this", ClassType(o.name), frame.getStartLabel(), frame.getEndLabel(), frame))  # Tạo biến "this" trong phương thức <init>
         
         emit.printout(emit.emitLABEL(frame.getStartLabel(), frame))
@@ -95,7 +99,7 @@ class CodeGenerator(BaseVisitor,Utils):
         emit.printout(emit.emitLABEL(frame.getEndLabel(), frame))
         emit.printout(emit.emitRETURN(VoidType(), frame))
         emit.printout(emit.emitENDMETHOD(frame))
-        frame.exitScope()
+        o.frame.exitScope()
 
     def visitProgram(self, ast: Program, c):
         env = Control([c], self.className)
@@ -110,32 +114,27 @@ class CodeGenerator(BaseVisitor,Utils):
         return env
 
     def visitFuncDecl(self, ast: FuncDecl, o: Control):
-        frame = Frame(ast.name, ast.retType)
+        env = o.newFrame(ast.name, ast.retType)
         isMain = ast.name == "main"
         emit = self.emit[o.name]
         if isMain:
             mtype = MType([ArrayType([None],StringType())], VoidType())
         else:
             mtype = MType(list(map(lambda x: x.parType, ast.params)), ast.retType)
-        # o['env'][0].append(Symbol(ast.name, mtype, CName(self.className)))
-        o.env[0].append(Symbol(ast.name, mtype, CName(self.className)))
-        # env = o.copy()
-        # env['env'] = [[]] + env['env']
-        env = o.enterScope()
-        env.frame = frame
-        emit.printout(emit.emitMETHOD(ast.name, mtype,True, frame))
-        frame.enterScope(True)
-        emit.printout(emit.emitLABEL(frame.getStartLabel(), frame))
+        env.env[0].append(Symbol(ast.name, mtype, CName(self.className)))
+        env = env.enterScope(True)
+        emit.printout(emit.emitMETHOD(ast.name, mtype,True, env.frame))
+        emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         if isMain:
-            emit.printout(emit.emitVAR(frame.getNewIndex(), "args", ArrayType([None],StringType()), frame.getStartLabel(), frame.getEndLabel(), frame))
+            emit.printout(emit.emitVAR(env.frame.getNewIndex(), "args", ArrayType([None],StringType()), env.frame.getStartLabel(), env.frame.getEndLabel(), env.frame))
         else:
             env = reduce(lambda acc,e: self.visit(e, acc), ast.params, env)
         env = self.visit(ast.body, env)
-        emit.printout(emit.emitLABEL(frame.getEndLabel(), frame))
+        emit.printout(emit.emitLABEL(env.frame.getEndLabel(), env.frame))
         if type(ast.retType) is VoidType:
-            emit.printout(emit.emitRETURN(VoidType(), frame))
-        emit.printout(emit.emitENDMETHOD(frame))
-        frame.exitScope()
+            emit.printout(emit.emitRETURN(VoidType(), env.frame))
+        emit.printout(emit.emitENDMETHOD(env.frame))
+        env.frame.exitScope()
         return o
     
     def visitMethodDecl(self, ast: MethodDecl, o: Control):
@@ -148,16 +147,14 @@ class CodeGenerator(BaseVisitor,Utils):
         sym.mtype.methods.append(ast)
         recType = ClassType(ast.recType.name)
         mtype = MType(list(map(lambda x: x.parType, func.params)), func.retType)
-        env.frame = Frame(func.name, func.retType)
-        emit.printout(emit.emitMETHOD(func.name, mtype, False, o.frame))
-        env.frame.enterScope(True)
-        env = env.enterScope()
+        env = env.newFrame(func.name, func.retType)
+        emit.printout(emit.emitMETHOD(func.name, mtype, False, env.frame))
+        env = env.enterScope(True)
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         index = env.frame.getNewIndex()
         env.env[0].append(Symbol(ast.receiver, recType, Index(index)))
         emit.printout(emit.emitVAR(index, ast.receiver, recType, env.frame.getStartLabel(), env.frame.getEndLabel(), env.frame))
-        env.frame.enterScope(False)
-        env = env.enterScope()
+        env = env.enterScope(False)
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         env = reduce(lambda acc, e: self.visit(e, acc), func.params, env)
         env = self.visit(func.body, env)
@@ -186,29 +183,30 @@ class CodeGenerator(BaseVisitor,Utils):
         else:
             frame = o.frame
             index = frame.getNewIndex()
+            varType = self.visit(ast.varType, o) if ast.varType else None
             if ast.varType:
-                emit.printout(emit.emitVAR(index, ast.varName, ast.varType, frame.getStartLabel(), frame.getEndLabel(), frame))  
+                emit.printout(emit.emitVAR(index, ast.varName, varType, frame.getStartLabel(), frame.getEndLabel(), frame))
             if ast.varInit:
                 # self.emit.printout(self.emit.emitPUSHICONST(ast.varInit.value, frame))
                 # self.emit.printout(self.emit.emitWRITEVAR(ast.varName, ast.varType, index,  frame))
-                varInitCode, varInitType = self.visit(ast.varInit, o)
-                if not ast.varType:
-                    ast.varType = varInitType
-                    emit.printout(emit.emitVAR(index, ast.varName, ast.varType, frame.getStartLabel(), frame.getEndLabel(), frame))
+                varInitCode, varInitType = self.visit(ast.varInit, o.setLeft(False))
+                if not varType:
+                    emit.printout(emit.emitVAR(index, ast.varName, varInitType, frame.getStartLabel(), frame.getEndLabel(), frame))
+                if not varType or isinstance(varType, ClassType):
+                    varType = varInitType
                 emit.printout(varInitCode)
-                if isinstance(varInitType, IntType) and isinstance(ast.varType, FloatType):
+                if isinstance(varInitType, IntType) and isinstance(varType, FloatType):
                     emit.printout(emit.emitI2F(o.frame))
-                emit.printout(emit.emitWRITEVAR(ast.varName, ast.varType, index, frame))
-                if isinstance(varInitType, ArrayType) and isinstance(ast.varType, ArrayType) and isinstance(ast.varInit, ArrayLiteral):
-                    emit.printout(self.writeArray(index, ast.varType, ast.varName, ast.varInit.value, o))
+                emit.printout(emit.emitWRITEVAR(ast.varName, varType, index, frame))
+                if isinstance(varInitType, ArrayType) and isinstance(varType, ArrayType) and isinstance(ast.varInit, ArrayLiteral):
+                    emit.printout(self.writeArray(index, varType, ast.varName, ast.varInit.value, o))
                 elif isinstance(varInitType, ClassType) and isinstance(ast.varInit, StructLiteral):
                     for field, value in ast.varInit.elements:
-                        emit.printout(emit.emitREADVAR(ast.varName, ast.varType, index, o.frame))
+                        emit.printout(emit.emitREADVAR(ast.varName, varType, index, o.frame))
                         val, typ = self.visit(value, o)
                         emit.printout(val)
                         emit.printout(emit.emitPUTFIELD(ast.varInit.name + "." + field, typ, o.frame))
-            if isinstance(ast.varType, StructType): ast.varType = ClassType(ast.varType.name)
-            o.env[0].append(Symbol(ast.varName, ast.varType, Index(index)))
+            o.env[0].append(Symbol(ast.varName, varType, Index(index)))
         return o
     
     def visitFuncCall(self, ast: FuncCall, o: Control):
@@ -262,6 +260,13 @@ class CodeGenerator(BaseVisitor,Utils):
     def visitBoolType(self, ast: BoolType, o: Control):
         return BoolType()
     
+    def visitArrayType(self, ast: ArrayType, o: Control):
+        return ast
+    
+    def visitInterfaceType(self, ast: InterfaceType, o: Control):
+        o.env[0].append(Symbol(ast.name, ast, CName(ast.name)))
+        return o
+    
     def visitStructType(self, ast: StructType, o: Control):
         o.env[0].append(Symbol(ast.name, ast, CName(ast.name)))
         self.emit[ast.name] = Emitter(self.path + "/" + ast.name + ".j")
@@ -275,8 +280,7 @@ class CodeGenerator(BaseVisitor,Utils):
     
     def visitBlock(self, ast: Block, o: Control):
         emit = self.emit[o.name]
-        env = o.enterScope()
-        env.frame.enterScope(False)
+        env = o.enterScope(False)
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
         env = reduce(lambda acc, e: self.visit(e, acc), ast.member, env)
         emit.printout(emit.emitLABEL(env.frame.getEndLabel(), env.frame))
@@ -297,7 +301,7 @@ class CodeGenerator(BaseVisitor,Utils):
         emit = self.emit[o.name]
         # sym = next(filter(lambda x: x.name == ast.name, [j for i in o['env'] for j in i]),None)
         sym = next(filter(lambda x: x.name == ast.name, [j for i in o.env for j in i]), None)
-        if isinstance(sym.mtype, StructType):
+        if type(sym.mtype) in [InterfaceType, StructType]:
             return ClassType(sym.mtype.name)
         if o.isLeft is None:
             raise Exception("Illegal Access")

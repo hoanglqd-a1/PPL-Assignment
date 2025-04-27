@@ -151,3 +151,46 @@ func main() {
 };"""
         expect = "1 10.0 abc"
         self.assertTrue(TestCodeGen.test(input,expect,516))
+    
+    def test_interface_decl0(self):
+        input = """
+type A interface {
+    print();
+}
+type B struct {
+    a int;
+}
+func (b B) print() {
+    putInt(b.a);
+}
+func main() {
+    var abc A = B{a: 1};
+    abc.print();
+};"""
+        expect = "1"
+        self.assertTrue(TestCodeGen.test(input,expect,517))
+    def test_interface_decl1(self):
+        input = """
+type A interface {
+    print();
+}
+type B struct {
+    a int;
+}
+func (b B) print() {
+    putInt(b.a);
+}
+type C struct {
+    a int;
+}
+func (c C) print() {
+    putInt(c.a);
+}
+func main() {
+    var abc A = B{a: 1};
+    abc.print();
+    var def A = C{a: 2};
+    def.print();
+};"""
+        expect = "12"
+        self.assertTrue(TestCodeGen.test(input,expect,518))
