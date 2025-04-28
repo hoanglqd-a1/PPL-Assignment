@@ -396,8 +396,8 @@ class CodeGenerator(BaseVisitor,Utils):
         emit = self.emit[o.name]
         if ast.op in ["&&", "||"]:
             outLabel = o.frame.getNewLabel()
-            code, then, else_, _ = self.visitCond(ast, o)
-            return code + then + emit.emitPUSHICONST(1, o.frame) + emit.emitGOTO(outLabel, o.frame) + else_ + emit.emitPUSHICONST(0, o.frame) + emit.emitLABEL(outLabel, o.frame), BoolType()
+            cond, then, else_, _ = self.visitCond(ast, o)
+            return cond + then + emit.emitPUSHICONST(1, o.frame) + emit.emitGOTO(outLabel, o.frame) + else_ + emit.emitPUSHICONST(0, o.frame) + emit.emitLABEL(outLabel, o.frame), BoolType()
         left, ltype = self.visit(ast.left, o.setLeft(False))
         right, rtype = self.visit(ast.right, o.setLeft(False))
         assert not isinstance(ltype, BoolType) and not isinstance(rtype, BoolType), "Logical error"
@@ -421,7 +421,14 @@ class CodeGenerator(BaseVisitor,Utils):
                 raise Exception(f"Logical error: {ast}")
 
     def visitUnaryOp(self, ast: UnaryOp, o: Control):
-        pass
+        emit = self.emit[o.name]
+        if ast.op == "!":
+            outLabel = o.frame.getNewLabel()
+            cond, then, else_, _ = self.visitCond(ast, o)
+            return cond + then + emit.emitPUSHICONST(1, o.frame) + emit.emitGOTO(outLabel, o.frame) + else_ + emit.emitPUSHICONST(0, o.frame) + emit.emitLABEL(outLabel, o.frame), BoolType()
+        else:
+            expr, typ = self.visit(ast.body, o)
+            return expr + emit.emitNEGOP(typ, o.frame), typ
 
     def visitCond(self, ast, o: Control):
         emit = self.emit[o.name]

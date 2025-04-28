@@ -339,3 +339,20 @@ func main() {
 """
         expect = "true"
         self.assertTrue(TestCodeGen.test(input,expect,532))
+
+    def test_unary_op0(self):
+        input = """
+func main() {
+    var x = -10 * (-12.5);
+    putFloat(x);
+}"""
+        expect = "125.0"
+        self.assertTrue(TestCodeGen.test(input,expect,533))
+    def test_unary_op1(self):
+        input = """
+func main() {
+    var x = !(10 > 2 && 3.0 < -(-10.1));
+    putBool(x);
+}"""
+        expect = """false"""
+        self.assertTrue(TestCodeGen.test(input,expect,534))
