@@ -455,20 +455,49 @@ class Emitter():
 
         frame.pop()
         frame.pop()
-        if op == ">":
-            result.append(self.jvm.emitIFICMPLE(labelF))
-        elif op == ">=":
-            result.append(self.jvm.emitIFICMPLT(labelF))
-        elif op == "<":
-            result.append(self.jvm.emitIFICMPGE(labelF))
-        elif op == "<=":
-            result.append(self.jvm.emitIFICMPGT(labelF))
-        elif op == "!=":
-            result.append(self.jvm.emitIFICMPEQ(labelF))
-        elif op == "==":
-            result.append(self.jvm.emitIFICMPNE(labelF))
+        if isinstance(in_, IntType):
+            if op == ">":
+                result.append(self.jvm.emitIFICMPLE(labelF))
+            elif op == ">=":
+                result.append(self.jvm.emitIFICMPLT(labelF))
+            elif op == "<":
+                result.append(self.jvm.emitIFICMPGE(labelF))
+            elif op == "<=":
+                result.append(self.jvm.emitIFICMPGT(labelF))
+            elif op == "!=":
+                result.append(self.jvm.emitIFICMPEQ(labelF))
+            elif op == "==":
+                result.append(self.jvm.emitIFICMPNE(labelF))
+        elif isinstance(in_, FloatType):
+            result.append(self.jvm.emitFCMPL())
+            if op == ">":
+                result.append(self.jvm.emitIFLE(labelF))
+            elif op == ">=":
+                result.append(self.jvm.emitIFLT(labelF))
+            elif op == "<":
+                result.append(self.jvm.emitIFGE(labelF))
+            elif op == "<=":
+                result.append(self.jvm.emitIFGT(labelF))
+            elif op == "!=":
+                result.append(self.jvm.emitIFEQ(labelF))
+            elif op == "==":
+                result.append(self.jvm.emitIFNE(labelF))
+        elif isinstance(in_, StringType):
+            result.append(self.jvm.emitINVOKEVIRTUAL("java/lang/String/equals(Ljava/lang/Object;)", "Z"))
+            if op == ">":
+                result.append(self.jvm.emitIFLE(labelF))
+            elif op == ">=":
+                result.append(self.jvm.emitIFLT(labelF))
+            elif op == "<":
+                result.append(self.jvm.emitIFGE(labelF))
+            elif op == "<=":
+                result.append(self.jvm.emitIFGT(labelF))
+            elif op == "!=":
+                result.append(self.jvm.emitIFEQ(labelF))
+            elif op == "==":
+                result.append(self.jvm.emitIFNE(labelF))
+        
         result.append(self.emitPUSHCONST("1", IntType(), frame))
-        frame.pop()
         result.append(self.emitGOTO(labelO, frame))
         result.append(self.emitLABEL(labelF, frame))
         result.append(self.emitPUSHCONST("0", IntType(), frame))
@@ -487,21 +516,50 @@ class Emitter():
 
         frame.pop()
         frame.pop()
-        if op == ">":
-            result.append(self.jvm.emitIFICMPLE(falseLabel))
-            result.append(self.emitGOTO(trueLabel))
-        elif op == ">=":
-            result.append(self.jvm.emitIFICMPLT(falseLabel))
-        elif op == "<":
-            result.append(self.jvm.emitIFICMPGE(falseLabel))
-        elif op == "<=":
-            result.append(self.jvm.emitIFICMPGT(falseLabel))
-        elif op == "!=":
-            result.append(self.jvm.emitIFICMPEQ(falseLabel))
-        elif op == "==":
-            result.append(self.jvm.emitIFICMPNE(falseLabel))
-        result.append(self.jvm.emitGOTO(trueLabel))
+        if isinstance(in_, IntType):
+            if op == ">":
+                result.append(self.jvm.emitIFICMPLE(falseLabel))
+            elif op == ">=":
+                result.append(self.jvm.emitIFICMPLT(falseLabel))
+            elif op == "<":
+                result.append(self.jvm.emitIFICMPGE(falseLabel))
+            elif op == "<=":
+                result.append(self.jvm.emitIFICMPGT(falseLabel))
+            elif op == "!=":
+                result.append(self.jvm.emitIFICMPEQ(falseLabel))
+            elif op == "==":
+                result.append(self.jvm.emitIFICMPNE(falseLabel))
+        elif isinstance(in_, FloatType):
+            result.append(self.jvm.emitFCMPL())
+            if op == ">":
+                result.append(self.jvm.emitIFLE(falseLabel))
+            elif op == ">=":
+                result.append(self.jvm.emitIFLT(falseLabel))
+            elif op == "<":
+                result.append(self.jvm.emitIFGE(falseLabel))
+            elif op == "<=":
+                result.append(self.jvm.emitIFGT(falseLabel))
+            elif op == "!=":
+                result.append(self.jvm.emitIFEQ(falseLabel))
+            elif op == "==":
+                result.append(self.jvm.emitIFNE(falseLabel))
+        elif isinstance(in_, StringType):
+            result.append(self.jvm.emitINVOKEVIRTUAL("java/lang/String/equals(Ljava/lang/Object;)", "Z"))
+            if op == ">":
+                result.append(self.jvm.emitIFLE(falseLabel))
+            elif op == ">=":
+                result.append(self.jvm.emitIFLT(falseLabel))
+            elif op == "<":
+                result.append(self.jvm.emitIFGE(falseLabel))
+            elif op == "<=":
+                result.append(self.jvm.emitIFGT(falseLabel))
+            elif op == "!=":
+                result.append(self.jvm.emitIFEQ(falseLabel))
+            elif op == "==":
+                result.append(self.jvm.emitIFNE(falseLabel))
+        if trueLabel: result.append(self.jvm.emitGOTO(trueLabel))
         return ''.join(result)
+        
 
     '''   generate the method directive for a function.
     *   @param lexeme the qualified name of the method(i.e., class-name/method-name).

@@ -20,7 +20,8 @@ from functools import reduce
 class Control:
     frame : Frame
     env : List[List[Symbol]]
-    def __init__(self, env, name, frame=None, isLeft=None):
+    isLeft : bool
+    def __init__(self, env, name, frame = None, isLeft = None):
         self.env = env
         self.name = name
         self.frame = frame
@@ -379,8 +380,6 @@ class CodeGenerator(BaseVisitor,Utils):
         else:
             return arr + index + emit.emitALOAD(cellType, o.frame), cellType
 
-
-        
     def visitFieldAccess(self, ast: FieldAccess, o: Control):
         emit = self.emit[o.name]
         receiver, typ = self.visit(ast.receiver, o.setLeft(False))
@@ -394,10 +393,64 @@ class CodeGenerator(BaseVisitor,Utils):
             return receiver, emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
         
     def visitBinaryOp(self, ast: BinaryOp, o: Control):
-        pass
+        emit = self.emit[o.name]
+        if ast.op in ["&&", "||"]:
+            outLabel = o.frame.getNewLabel()
+            code, then, else_, _ = self.visitCond(ast, o)
+            return code + then + emit.emitPUSHICONST(1, o.frame) + emit.emitGOTO(outLabel, o.frame) + else_ + emit.emitPUSHICONST(0, o.frame) + emit.emitLABEL(outLabel, o.frame), BoolType()
+        left, ltype = self.visit(ast.left, o.setLeft(False))
+        right, rtype = self.visit(ast.right, o.setLeft(False))
+        assert not isinstance(ltype, BoolType) and not isinstance(rtype, BoolType), "Logical error"
+        if ast.op in ["==", "!=", "<", "<=", ">", ">="]:
+            return left + right + emit.emitREOP(ast.op, ltype, o.frame), BoolType()
+        elif ast.op == "+" and isinstance(ltype, StringType) and isinstance(rtype, StringType):
+            raise Exception("Not yet implemented")
+        else:
+            retType = FloatType() if isinstance(ltype, FloatType) else rtype
+            if type(retType) != type(ltype):
+                left += emit.emitI2F(o.frame)
+            if type(retType) != type(rtype):
+                right += emit.emitI2F(o.frame)
+            if ast.op in ["+", "-"]:
+                return left + right + emit.emitADDOP(ast.op, retType, o.frame), retType
+            elif ast.op in ["*", "/"]:
+                return left + right + emit.emitMULOP(ast.op, retType, o.frame), retType
+            elif ast.op == "%":
+                return left + right + emit.emitMOD(o.frame), IntType()
+            else:
+                raise Exception(f"Logical error: {ast}")
 
     def visitUnaryOp(self, ast: UnaryOp, o: Control):
         pass
+
+    def visitCond(self, ast, o: Control):
+        emit = self.emit[o.name]
+        trueLabel = o.frame.getNewLabel()
+        falseLabel = o.frame.getNewLabel()
+        if isinstance(ast, BinaryOp):
+            if ast.op in ["==", "!=", "<", "<=", ">", ">="]:
+                left, ltype = self.visit(ast.left, o.setLeft(False))
+                right, _ = self.visit(ast.right, o.setLeft(False))
+                return left + right + emit.emitRELOP(ast.op, ltype, trueLabel, falseLabel, o.frame), emit.emitLABEL(trueLabel, o.frame), emit.emitLABEL(falseLabel, o.frame), BoolType()
+            elif ast.op == "||":
+                left, then1, else1, _ = self.visitCond(ast.left, o)
+                right, then2, else2, _ = self.visitCond(ast.right, o)
+                return left, then1 + emit.emitLABEL(trueLabel, o.frame) + then2, else1 + right + emit.emitLABEL(falseLabel, o.frame) + else2, BoolType()
+            elif ast.op == "&&":
+                left, then1, else1, _ = self.visitCond(ast.left, o)
+                right, then2, else2, _ = self.visitCond(ast.right, o)
+                return left, then1 + right + emit.emitLABEL(trueLabel, o.frame) + then2, else1 + emit.emitLABEL(falseLabel, o.frame) + else2, BoolType()
+
+        elif isinstance(ast, UnaryOp):
+            if ast.op == "!":
+                cond, then1, else1, _ = self.visitCond(ast.body, o)
+                return cond, then1 + emit.emitGOTO(falseLabel, o.frame) + emit.emitLABEL(trueLabel, o.frame), else1 + emit.emitGOTO(trueLabel, o.frame) + emit.emitLABEL(falseLabel, o.frame), BoolType()
+
+        elif isinstance(ast, BooleanLiteral):
+            label = trueLabel if ast.value else falseLabel
+            return emit.emitGOTO(label, o.frame), emit.emitLABEL(trueLabel, o.frame), emit.emitLABEL(falseLabel, o.frame), BoolType()
+
+        raise Exception(ast)
 
     def visitIntLiteral(self, ast: IntLiteral, o: Control):
         return self.emit[o.name].emitPUSHICONST(ast.value, o.frame), IntType()
