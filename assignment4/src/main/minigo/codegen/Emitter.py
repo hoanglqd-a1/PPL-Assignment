@@ -48,10 +48,17 @@ class Emitter():
         typeIn = type(inType)
         if typeIn is IntType:
             return "int"
+        elif typeIn is FloatType:
+            return "float"
+        elif typeIn is BoolType:
+            return "boolean"
         elif typeIn is cgen.StringType:
             return "java/lang/String"
         elif typeIn is VoidType:
             return "void"
+        elif typeIn is cgen.ClassType:
+            return inType.name
+        raise IllegalOperandException(str(inType))
 
     def emitPUSHICONST(self, in_, frame):
         #in: Int or Sring
@@ -95,15 +102,29 @@ class Emitter():
         frame.push()
         return self.jvm.emitLDC(in_)
 
-    def emitPUSHSTRUCTLIT(self, name, frame):
+    def emitPUSHSTRUCTLIT(self, params, types, name, frame):
         frame.push()
-        return self.jvm.emitNEW(name) + self.emitDUP(frame) + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
+        # return self.jvm.emitNEW(name) + self.emitDUP(frame) + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
+        code = ""
+        code += self.jvm.emitNEW(name) + self.emitDUP(frame) + self.jvm.emitINVOKESPECIAL(name + "/<init>", self.getJVMType(MType([], VoidType())))
+        for value, typ in zip(params, types):
+            code += self.emitPUSHCONST(value, typ, frame)
+            code += self.jvm.emitPUTFIELD(name + "/" + value, self.getJVMType(typ))
+
+    def emitNEW(self, name, frame):
+        #name: String
+        #frame: Frame
+        
+        frame.push()
+        return self.jvm.emitNEW(name)
 
     def emitPUSHARRAYCONST(self, in_, dimens_num, frame):
         if dimens_num == 1:
             frame.push()
             frame.push()
-            return self.jvm.emitNEWARRAY(self.getFullType(in_))
+            if type(in_) in [IntType, FloatType, BoolType]:
+                return self.jvm.emitNEWARRAY(self.getFullType(in_))
+            return self.jvm.emitANEWARRAY(self.getFullType(in_)) 
         else:
             frame.push()
             [frame.push() for _ in range(dimens_num)]
@@ -131,6 +152,10 @@ class Emitter():
         frame.pop()
         if type(in_) is IntType:
             return self.jvm.emitIALOAD()
+        elif type(in_) is FloatType:
+            return self.jvm.emitFALOAD()
+        elif type(in_) is BoolType:
+            return self.jvm.emitBALOAD()
         elif type(in_) is cgen.ArrayType or type(in_) is cgen.ClassType or type(in_) is StringType:
             return self.jvm.emitAALOAD()
         else:
@@ -146,6 +171,10 @@ class Emitter():
         frame.pop()
         if type(in_) is IntType:
             return self.jvm.emitIASTORE()
+        elif type(in_) is FloatType:
+            return self.jvm.emitFASTORE()
+        elif type(in_) is BoolType:
+            return self.jvm.emitBASTORE()
         elif type(in_) is cgen.ArrayType or type(in_) is cgen.ClassType or type(in_) is StringType:
             return self.jvm.emitAASTORE()
         else:
@@ -741,6 +770,9 @@ class Emitter():
             print(self.buff)
             raise e
         file.close()
+
+    def emitNULL(self):
+        return self.jvm.emitNULL()
 
     ''' print out the code to screen
     *   @param in the code to be printed out
