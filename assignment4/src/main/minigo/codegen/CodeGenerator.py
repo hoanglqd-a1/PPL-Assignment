@@ -484,8 +484,8 @@ class CodeGenerator(BaseVisitor,Utils):
         if ast.op in ["==", "!=", "<", "<=", ">", ">="]:
             return left + right + emit.emitREOP(ast.op, ltype, o.frame), BoolType()
         elif ast.op == "+" and isinstance(ltype, StringType) and isinstance(rtype, StringType):
-            # return emit.emitADDSTRING(left, right, o.frame), StringType()
-            raise Exception("Not implemented")
+            return emit.emitADDSTRING(left, right, o.frame), StringType()
+            # raise Exception("Not implemented")
         else:
             retType = FloatType() if isinstance(ltype, FloatType) else rtype
             if type(retType) != type(ltype):
@@ -616,4 +616,23 @@ class CodeGenerator(BaseVisitor,Utils):
         if isinstance(lhs, ArrayType):
             return self.isCoerce(lhs.eleType)
         return False
-    
+
+    # def addString(self, lhs, rhs, o: Control):
+    #     o = o.setLeft(False)
+    #     emit = self.emit[o.name]
+    #     def flatten_tree(tree):
+    #         if isinstance(tree, BinaryOp):
+    #             return flatten_tree(tree.left) + flatten_tree(tree.right)
+    #         return [tree]
+    #     tree = flatten_tree(lhs) + flatten_tree(rhs)
+    #     code = ""
+    #     code += emit.emitNEW("java/lang/StringBuilder", o.frame)
+    #     code += emit.emitDUP(o.frame)
+    #     code += emit.emitINVOKESPECIAL(o.frame, "java/lang/StringBuilder/<init>", MType([], VoidType()))
+    #     for s in tree:
+    #         code += self.visit(s, o)[0]
+    #         code += emit.emitINVOKEVIRTUAL("java/lang/StringBuilder/append", MType([StringType()], "Ljava/lang/StringBuilder;"), o.frame)
+    #     code += emit.emitINVOKEVIRTUAL("java/lang/StringBuilder/toString", MType([], StringType()), o.frame)
+    #     return code
+
+        

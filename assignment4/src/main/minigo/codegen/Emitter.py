@@ -376,9 +376,9 @@ class Emitter():
         code += self.emitDUP(frame)
         code += self.emitINVOKESPECIAL(frame, "java/lang/StringBuilder/<init>", MType([], VoidType()))
         code += str1
-        code += self.emitINVOKEVIRTUAL("java/lang/StringBuilder/append", MType([StringType()], "Ljava/lang/StringBuilder"), frame)
+        code += self.emitINVOKEVIRTUAL("java/lang/StringBuilder/append", MType([StringType()], "Ljava/lang/StringBuilder;"), frame)
         code += str2
-        code += self.emitINVOKEVIRTUAL("java/lang/StringBuilder/append", MType([StringType()], "Ljava/lang/StringBuilder"), frame)
+        code += self.emitINVOKEVIRTUAL("java/lang/StringBuilder/append", MType([StringType()], "Ljava/lang/StringBuilder;"), frame)
         code += self.emitINVOKEVIRTUAL("java/lang/StringBuilder/toString", MType([], StringType()), frame)
         return code
     
