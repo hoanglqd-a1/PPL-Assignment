@@ -762,11 +762,80 @@ func main () {
 type A struct {
     a int;
 }
+func (a A) increment() int {
+    return a.a + 1;
+}
 const a = A{a: 3};
 var arr [2][2]int = [2][2]int{{1, 2}, {3, 4}};
 func main () {
-    var array[a.a][arr[0][1]][arr[1][0]]int;
+    var array[a.a][arr[0][1]][a.increment()]int;
     putInt(array[0][1][2]);
 }"""
         expect = "0"
         self.assertTrue(TestCodeGen.test(input,expect,568))
+    def test_func_decl5(self):
+        input = """
+func main () {
+    var a = getInt();
+    putInt(a);
+}
+
+func getInt() int {
+    return 10;
+}
+"""
+        expect = "10"
+        self.assertTrue(TestCodeGen.test(input,expect,569))
+    def test_func_decl6(self):
+        input = """
+func getInt() int {
+    return rec(5);
+}
+func main () {
+    putIntLn(getInt());
+}
+func rec(a int) int {
+    if (a == 0) {
+        return 1;
+    }
+    return a * rec(a - 1);
+}
+"""
+        expect = "120\n"
+        self.assertTrue(TestCodeGen.test(input,expect,570))
+    def test_method_decl2(self):
+        input = """
+func (a A) add(b int, c int) {
+    a.a := a.sum(b, c);
+}
+type A struct {
+    a int;
+}
+func main () {
+    var a = A{a: 1};
+    putIntLn(a.sum(2, 3));
+}
+func (a A) sum(b, c int) int {
+    return b + c;
+}
+"""
+        expect = "5\n"
+        self.assertTrue(TestCodeGen.test(input,expect,571))
+    def test_struct3(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+}
+func main () {
+    var a = A{a: 1, b: 2.0};
+    var b = A{a: 5, b: 6.0};
+    a.a := 3;
+    a.b := 4.0;
+    putIntLn(a.a);
+    putFloatLn(a.b);
+    putIntLn(b.a);
+    putFloatLn(b.b);
+}"""
+        expect = "3\n4.0\n5\n6.0\n"
+        self.assertTrue(TestCodeGen.test(input,expect,572))

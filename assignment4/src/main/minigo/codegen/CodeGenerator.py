@@ -111,6 +111,21 @@ class CodeGenerator(BaseVisitor,Utils):
         Type = list(filter(lambda x: type(x) in [StructType, InterfaceType], ast.decl))
         env = reduce(lambda acc, ele: self.visit(ele, acc), Type, env)
         self.emit[env.name].printout(self.emit[env.name].emitPROLOG(self.className, "java.lang.Object"))
+        func = list(filter(lambda x: type(x) in [FuncDecl, MethodDecl], ast.decl))
+        for f in func:
+            if isinstance(f, FuncDecl):
+                isMain = f.name == "main"
+                if isMain:
+                    mtype = MType([ArrayType([None],StringType())], VoidType())
+                else:
+                    mtype = MType(list(map(lambda x: self.visit(x.parType, env), f.params)), self.visit(f.retType, env))
+                env.env[0].append(Symbol(f.name, mtype, CName(self.className)))
+            elif isinstance(f, MethodDecl):
+                sym = next(filter(lambda x: x.name == f.recType.name, env.env[-1]), None)
+                sym.mtype.methods.append(f)
+            else:
+                raise Exception("Logical error")
+
         notType = list(filter(lambda x: type(x) not in [StructType, InterfaceType], ast.decl))
         env = reduce(lambda acc, ele: self.visit(ele, acc), notType, env)
         self.emitObjectInit(env)
@@ -127,7 +142,7 @@ class CodeGenerator(BaseVisitor,Utils):
             mtype = MType([ArrayType([None],StringType())], VoidType())
         else:
             mtype = MType(list(map(lambda x: self.visit(x.parType, o), ast.params)), self.visit(ast.retType, o))
-        env.env[0].append(Symbol(ast.name, mtype, CName(self.className)))
+        # env.env[0].append(Symbol(ast.name, mtype, CName(self.className)))
         env = env.enterScope(True)
         emit.printout(emit.emitMETHOD(ast.name, mtype, True, env.frame))
         emit.printout(emit.emitLABEL(env.frame.getStartLabel(), env.frame))
@@ -147,10 +162,10 @@ class CodeGenerator(BaseVisitor,Utils):
         env = o.setName(ast.recType.name)
         emit = self.emit[env.name]
         func = ast.fun
-        sym = next(filter(lambda x: x.name == ast.recType.name, o.env[-1]), None)
-        assert isinstance(sym, Symbol), "Logical error"
-        assert isinstance(sym.mtype, StructType), "Logical error"
-        sym.mtype.methods.append(ast)
+        # sym = next(filter(lambda x: x.name == ast.recType.name, o.env[-1]), None)
+        # assert isinstance(sym, Symbol), "Logical error"
+        # assert isinstance(sym.mtype, StructType), "Logical error"
+        # sym.mtype.methods.append(ast)
         recType = ClassType(ast.recType.name)
         mtype = MType(list(map(lambda x: self.visit(x.parType, o), func.params)), self.visit(func.retType, o))
         env = env.newFrame(func.name, func.retType)
@@ -322,7 +337,7 @@ class CodeGenerator(BaseVisitor,Utils):
     
     def visitAssign(self, ast: Assign, o: Control):
         emit = self.emit[o.name]
-        _, rtype = self.visit(ast.rhs, o.setLeft(False))
+        _, rtype = self.visit(ast.rhs, Control(o.env, o.name, Frame("", None), False, None))
         if isinstance(ast.lhs, Id) and next(filter(lambda x: x.name == ast.lhs.name, [j for i in o.env for j in i]), None) is None:
             index = o.frame.getNewIndex()
             emit.printout(emit.emitVAR(index, ast.lhs.name, rtype, o.frame.getStartLabel(), o.frame.getEndLabel(), o.frame))
@@ -432,9 +447,9 @@ class CodeGenerator(BaseVisitor,Utils):
                 return emit.emitGETSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
         else:
             if type(sym.value) is Index:
-                return "", emit.emitWRITEVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
+                return "", lambda: emit.emitWRITEVAR(ast.name, sym.mtype, sym.value.value, o.frame), sym.mtype
             else:
-                return "", emit.emitPUTSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
+                return "", lambda: emit.emitPUTSTATIC(f"{self.className}/{sym.name}",sym.mtype,o.frame), sym.mtype
             
     def visitArrayCell(self, ast: ArrayCell, o: Control):
         emit = self.emit[o.name]
@@ -442,7 +457,7 @@ class CodeGenerator(BaseVisitor,Utils):
         index, _ = self.visit(ast.idx[-1], o.setLeft(False))
         cellType = ArrayType(typ.dimens[1:], typ.eleType) if len(typ.dimens) > 1 else typ.eleType
         if o.isLeft:
-            return arr + index, emit.emitASTORE(cellType, o.frame), cellType
+            return arr + index, lambda: emit.emitASTORE(cellType, o.frame), cellType
         else:
             return arr + index + emit.emitALOAD(cellType, o.frame), cellType
 
@@ -455,8 +470,8 @@ class CodeGenerator(BaseVisitor,Utils):
         if not o.isLeft:
             return receiver + emit.emitGETFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
         else:
-            return receiver, emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
-        
+            return receiver, lambda: emit.emitPUTFIELD(f"{typ.name}.{ast.field}", fieldType, o.frame), fieldType
+
     def visitBinaryOp(self, ast: BinaryOp, o: Control):
         emit = self.emit[o.name]
         if ast.op in ["&&", "||"]:
@@ -593,7 +608,7 @@ class CodeGenerator(BaseVisitor,Utils):
     def assign(self, lhs, rhs, o: Control):
         loadlhs, storelhs, ltype = self.visit(lhs, o.setLeft(True))
         loadrhs, _ = self.visit(rhs, o.setLeft(False).setCoerce(self.isCoerce(ltype)))
-        return loadlhs + loadrhs + storelhs
+        return loadlhs + loadrhs + storelhs()
     
     def isCoerce(self, lhs):
         if isinstance(lhs, FloatType):
@@ -601,3 +616,4 @@ class CodeGenerator(BaseVisitor,Utils):
         if isinstance(lhs, ArrayType):
             return self.isCoerce(lhs.eleType)
         return False
+    
