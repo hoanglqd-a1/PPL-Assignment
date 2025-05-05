@@ -67,6 +67,7 @@ class CodeGenerator(BaseVisitor,Utils):
         self.astTree = None
         self.path = None
         self.emit : Dict[str, Emitter] = {}
+        self.clinit : List[Assign] = [] # list of Static Initilization
 
     def init(self):
         mem =  [Symbol("putInt",MType([IntType()],VoidType()),CName("io",True)),
@@ -113,6 +114,8 @@ class CodeGenerator(BaseVisitor,Utils):
         notType = list(filter(lambda x: type(x) not in [StructType, InterfaceType], ast.decl))
         env = reduce(lambda acc, ele: self.visit(ele, acc), notType, env)
         self.emitObjectInit(env)
+        clinit = FuncDecl("<clinit>", [], VoidType(), Block(self.clinit))
+        self.visit(clinit, env)
         self.emit[env.name].printout(self.emit[env.name].emitEPILOG())
         return env
 
@@ -149,7 +152,7 @@ class CodeGenerator(BaseVisitor,Utils):
         assert isinstance(sym.mtype, StructType), "Logical error"
         sym.mtype.methods.append(ast)
         recType = ClassType(ast.recType.name)
-        mtype = MType(list(map(lambda x: x.parType, func.params)), func.retType)
+        mtype = MType(list(map(lambda x: self.visit(x.parType, o), func.params)), self.visit(func.retType, o))
         env = env.newFrame(func.name, func.retType)
         emit.printout(emit.emitMETHOD(func.name, mtype, False, env.frame))
         env = env.enterScope(True)
@@ -182,8 +185,18 @@ class CodeGenerator(BaseVisitor,Utils):
     def visitVarDecl(self, ast: VarDecl, o: Control):
         emit = self.emit[o.name]
         if not o.frame: # global var
-            o.env[0].append(Symbol(ast.varName, ast.varType, CName(self.className)))
-            emit.printout(emit.emitATTRIBUTE(ast.varName, ast.varType, True, False, str(ast.varInit.value) if ast.varInit else None))
+            varType = self.visit(ast.varType, o) if ast.varType else None
+            # if ast.varType:
+            #     emit.printout(emit.emitATTRIBUTE(ast.varName, varType, True, False, None))
+            if ast.varInit:
+                _, typ = self.visit(ast.varInit, o.newFrame("", None).setLeft(False))
+                if not varType:
+                    varType = typ
+                self.clinit.append(Assign(Id(ast.varName), ast.varInit))
+            emit.printout(emit.emitATTRIBUTE(ast.varName, varType, True, False, None))
+            if isinstance(ast.varInit, StructLiteral):
+                varType = ClassType(ast.varInit.name)
+            o.env[0].append(Symbol(ast.varName, varType, CName(self.className)))
         else:
             frame = o.frame
             index = frame.getNewIndex()
@@ -198,29 +211,36 @@ class CodeGenerator(BaseVisitor,Utils):
                     varType = varInitType
                 emit.printout(varInitCode)
                 emit.printout(emit.emitWRITEVAR(ast.varName, varType, index, frame))
+            else:
+                if isinstance(varType, ArrayType):
+                    list(map(lambda x: emit.printout(self.visit(x, o.setLeft(False))[0]), varType.dimens))
+                    emit.printout(emit.emitPUSHARRAYCONST(varType.eleType, len(varType.dimens), frame))
+                    emit.printout(emit.emitWRITEVAR(ast.varName, varType, index, frame))
             o.env[0].append(Symbol(ast.varName, varType, Index(index)))
         return o
     
     def visitConstDecl(self, ast: ConstDecl, o: Control):
         emit = self.emit[o.name]
+        conType = self.visit(ast.conType, o) if ast.conType else None
         if not o.frame: # global var
-            o.env[0].append(Symbol(ast.conName, self.visit(ast.conType, o), CName(self.className)))
-            emit.printout(emit.emitATTRIBUTE(ast.conName, ast.conType, True, True, str(ast.iniExpr.value) if ast.iniExpr else None))
+            _, typ = self.visit(ast.iniExpr, o.newFrame("", None).setLeft(False))
+            if not conType:
+                conType = typ
+            o.env[0].append(Symbol(ast.conName, conType, CName(self.className)))
+            self.clinit.append(Assign(Id(ast.conName), ast.iniExpr))
+            emit.printout(emit.emitATTRIBUTE(ast.conName, conType, True, True, None))
         else:
             frame = o.frame
             index = frame.getNewIndex()
-            varType = self.visit(ast.conType, o) if ast.conType else None
-            varInitCode, varInitType = self.visit(ast.iniExpr, o.setLeft(False))
-            emit.printout(emit.emitVAR(index, ast.conName, varType if varType else varInitType, frame.getStartLabel(), frame.getEndLabel(), frame))
-            if not varType or isinstance(varType, ClassType):
-                varType = varInitType
-            emit.printout(varInitCode)
-            if isinstance(varInitType, IntType) and isinstance(varType, FloatType):
-                emit.printout(emit.emitI2F(o.frame))
-            emit.printout(emit.emitWRITEVAR(ast.conName, varType, index, frame))
-            o.env[0].append(Symbol(ast.conName, varType, Index(index)))
-            # if isinstance(varInitType, ArrayType) and isinstance(varType, ArrayType) and isinstance(ast.iniExpr, ArrayLiteral):
-            #     emit.printout(self.writeArray(Id(ast.conName), ast.iniExpr, o))
+            conInitCode, conInitType = self.visit(ast.iniExpr, o.setLeft(False).setCoerce(self.isCoerce(conType)))
+            if not conType:
+                conType = conInitType
+            emit.printout(emit.emitVAR(index, ast.conName, conType, frame.getStartLabel(), frame.getEndLabel(), frame))
+            if not conType or isinstance(conType, ClassType):
+                conType = conInitType
+            emit.printout(conInitCode)
+            emit.printout(emit.emitWRITEVAR(ast.conName, conType, index, frame))
+            o.env[0].append(Symbol(ast.conName, conType, Index(index)))
         return o
     
     def visitFuncCall(self, ast: FuncCall, o: Control):
@@ -236,10 +256,6 @@ class CodeGenerator(BaseVisitor,Utils):
         else:
             emit.printout(code)
             return o
-        # env = o.setLeft(False)
-        # [emit.printout(self.visit(x, env)[0]) for x in ast.args]
-        # emit.printout(emit.emitINVOKESTATIC(f"{sym.value.value}/{ast.funName}",sym.mtype, o.frame))
-        # return (o, sym.mtype.rettype) if not isinstance(sym.mtype.rettype, VoidType) else o
 
     def visitMethCall(self, ast: MethCall, o: Control):
         emit = self.emit[o.name]
@@ -249,9 +265,9 @@ class CodeGenerator(BaseVisitor,Utils):
         assert isinstance(sym, Symbol), "Logical error"
         assert isinstance(sym.mtype, StructType), "Logical error"
         fun = next(filter(lambda x: x.fun.name == ast.metName, sym.mtype.methods), None).fun
-        parType = list(map(lambda x: x.parType, fun.params))
-        retType = fun.retType
-        mtype = MType(parType, retType)        
+        parType = list(map(lambda x: self.visit(x.parType, o), fun.params))
+        retType = self.visit(fun.retType, o)
+        mtype = MType(parType, retType)   
         args = reduce(lambda acc, ele: acc + self.visit(ele, o)[0], ast.args, "")
         code = emit.emitINVOKEVIRTUAL(f"{typ.name}/{ast.metName}", mtype, o.frame)
         if not isinstance(retType, VoidType):
@@ -365,20 +381,19 @@ class CodeGenerator(BaseVisitor,Utils):
         o.frame.exitLoop()
         return o
     
-    def visitForEach(self, ast: ForEach, o: Control):
-        if isinstance(ast.arr, Id):
-            sym: Symbol = next(filter(lambda x: x.name == ast.arr.name, [j for i in o.env for j in i]), None)
-            assert isinstance(sym.mtype, ArrayType), "Logical error"
-            length = sym.mtype.dimens[0].value
-            init = Assign(ast.idx, IntLiteral(0))
-            cond = BinaryOp("<", ast.idx, IntLiteral(length))
-            upda = Assign(ast.idx, BinaryOp("+", ast.idx, IntLiteral(1)))
-            loop = Block([Assign(ast.value, ArrayCell(ast.arr, [ast.idx]))] + ast.loop.member)
-        else:
-            raise Exception("Not implemented yet")
-        o = self.visit(ForStep(init, cond, upda, loop), o)
-        return o
-
+    # def visitForEach(self, ast: ForEach, o: Control):
+    #     if isinstance(ast.arr, Id):
+    #         sym: Symbol = next(filter(lambda x: x.name == ast.arr.name, [j for i in o.env for j in i]), None)
+    #         assert isinstance(sym.mtype, ArrayType), "Logical error"
+    #         length = sym.mtype.dimens[0].value
+    #         init = Assign(ast.idx, IntLiteral(0))
+    #         cond = BinaryOp("<", ast.idx, IntLiteral(length))
+    #         upda = Assign(ast.idx, BinaryOp("+", ast.idx, IntLiteral(1)))
+    #         loop = Block([Assign(ast.value, ArrayCell(ast.arr, [ast.idx]))] + ast.loop.member)
+    #     else:
+    #         raise Exception("Not implemented yet")
+    #     o = self.visit(ForStep(init, cond, upda, loop), o)
+    #     return o
 
     def visitBreak(self, ast: Break, o: Control):
         emit = self.emit[o.name]
@@ -454,7 +469,8 @@ class CodeGenerator(BaseVisitor,Utils):
         if ast.op in ["==", "!=", "<", "<=", ">", ">="]:
             return left + right + emit.emitREOP(ast.op, ltype, o.frame), BoolType()
         elif ast.op == "+" and isinstance(ltype, StringType) and isinstance(rtype, StringType):
-            raise Exception("Not yet implemented")
+            # return emit.emitADDSTRING(left, right, o.frame), StringType()
+            raise Exception("Not implemented")
         else:
             retType = FloatType() if isinstance(ltype, FloatType) else rtype
             if type(retType) != type(ltype):
@@ -481,14 +497,14 @@ class CodeGenerator(BaseVisitor,Utils):
             return expr + emit.emitNEGOP(typ, o.frame), typ
 
     def visitCond(self, ast, o: Control):
+        o = o.setLeft(False)
         emit = self.emit[o.name]
-        # trueLabel = o.frame.getNewLabel()
         falseLabel = o.frame.getNewLabel()
         trueLabel = o.frame.getNewLabel()
         if isinstance(ast, BinaryOp):
             if ast.op in ["==", "!=", "<", "<=", ">", ">="]:
-                left, ltype = self.visit(ast.left, o.setLeft(False))
-                right, _ = self.visit(ast.right, o.setLeft(False))
+                left, ltype = self.visit(ast.left, o)
+                right, _ = self.visit(ast.right, o)
                 return left + right + emit.emitRELOP(ast.op, ltype, trueLabel, falseLabel, o.frame), emit.emitLABEL(trueLabel, o.frame), emit.emitLABEL(falseLabel, o.frame), BoolType()
             elif ast.op == "||":
                 left, then1, else1, _ = self.visitCond(ast.left, o)
@@ -507,11 +523,11 @@ class CodeGenerator(BaseVisitor,Utils):
         elif isinstance(ast, BooleanLiteral):
             label = trueLabel if ast.value else falseLabel
             return emit.emitGOTO(label, o.frame), emit.emitLABEL(trueLabel, o.frame), emit.emitLABEL(falseLabel, o.frame), BoolType()
-
-        raise Exception(ast)
+        else:
+            value, _ = self.visit(ast, o)
+            return value + emit.emitIFFALSE(falseLabel, o.frame) + emit.emitGOTO(trueLabel, o.frame), emit.emitLABEL(trueLabel, o.frame), emit.emitLABEL(falseLabel, o.frame), BoolType()
 
     def visitIntLiteral(self, ast: IntLiteral, o: Control):
-        # return self.emit[o.name].emitPUSHICONST(ast.value, o.frame), IntType()
         typ = IntType()
         code = self.emit[o.name].emitPUSHICONST(ast.value, o.frame)
         if o.coerce:
@@ -532,7 +548,6 @@ class CodeGenerator(BaseVisitor,Utils):
             return self.emit[o.name].emitPUSHICONST(0, o.frame), BoolType()
     
     def visitStructLiteral(self, ast: StructLiteral, o: Control):
-        # return self.emit[o.name].emitPUSHSTRUCTLIT(ast.name, o.frame), ClassType(ast.name)
         emit = self.emit[o.name]
         code = ""
         code += emit.emitNEW(ast.name, o.frame)
@@ -543,7 +558,6 @@ class CodeGenerator(BaseVisitor,Utils):
             valueCode, valueType = self.visit(value, o.setLeft(False))
             code += valueCode
             code += emit.emitPUTFIELD(f"{ast.name}.{field}", valueType, o.frame)
-
         return code, ClassType(ast.name)
 
     def visitNilLiteral(self, ast: NilLiteral, o: Control):
@@ -562,7 +576,7 @@ class CodeGenerator(BaseVisitor,Utils):
                 for i, v in enumerate(value):
                     code += emit.emitDUP(o.frame)
                     code += emit.emitPUSHICONST(i, o.frame)
-                    valueCode, valueType = self.visit(v, o.setLeft(False))
+                    valueCode, _ = self.visit(v, o.setLeft(False))
                     code += valueCode
                     code += emit.emitASTORE(eleType, o.frame)
             else:
@@ -575,21 +589,10 @@ class CodeGenerator(BaseVisitor,Utils):
             return code
         code += storeArray(ast.dimens, ast.value, typ)
         return code, ArrayType(ast.dimens, typ)
-
-    
-    def getElements(self, elements, o: Control):
-        if not isinstance(elements, list):
-            return self.visit(elements, o)[0]
-        return list(map([self.getElements(x, o)[0] for x in elements], elements))
-    
-    def getDimens(self, value):
-        if not isinstance(value, list):
-            return []
-        return [len(value)] + self.getDimens(value[0])
     
     def assign(self, lhs, rhs, o: Control):
         loadlhs, storelhs, ltype = self.visit(lhs, o.setLeft(True))
-        loadrhs, rtype = self.visit(rhs, o.setLeft(False).setCoerce(self.isCoerce(ltype)))
+        loadrhs, _ = self.visit(rhs, o.setLeft(False).setCoerce(self.isCoerce(ltype)))
         return loadlhs + loadrhs + storelhs
     
     def isCoerce(self, lhs):

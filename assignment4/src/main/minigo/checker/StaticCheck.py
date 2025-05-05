@@ -1,12 +1,12 @@
 """
  * @author nhphung
 """
+from AST import * 
+from Visitor import *
+from Utils import Utils
 # from utils.AST import *
 # from utils.Visitor import *
 # from utils.Utils import Utils
-from AST import *
-from Visitor import *
-from Utils import Utils
 from StaticError import *
 from functools import reduce
 

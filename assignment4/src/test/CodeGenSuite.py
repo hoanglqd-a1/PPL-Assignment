@@ -594,3 +594,179 @@ func main () {
 """
         expect = "4.0"
         self.assertTrue(TestCodeGen.test(input,expect,555))
+    def test_func_decl3(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+}
+func add(a A, b A) A {
+    return A{a: a.a + b.a, b: a.b + b.b};
+}
+func main () {
+    var a = A{a: 1, b: 2.0};
+    var b = A{a: 3, b: 4.0};
+    var c = add(a, b);
+    putIntLn(c.a);
+    putFloat(c.b);
+}"""
+        expect = "4\n6.0"
+        self.assertTrue(TestCodeGen.test(input,expect,556))
+    def test_func_decl4(self):
+        input = """
+func printArray() {
+    var b int = 4;
+    var arr [b * 10 / 10 + 1]int = [b+1]int{1, 2, 3, 4, 5};
+    for i := 0; i < b; i += 1 {
+        putInt(arr[i]);
+    }
+}
+func main () {
+    printArray();
+}"""
+        expect = "1234"
+        self.assertTrue(TestCodeGen.test(input,expect,557))
+    def test_global_var0(self):
+        input = """
+var a = (10 + 12) / 3 - (500 * 2) % 3;
+func main () {
+    putInt(a);
+}"""
+        expect = "6"
+        self.assertTrue(TestCodeGen.test(input,expect,558))
+    def test_global_var1(self):
+        input = """
+var a [3]float = [3]float{1.0, 2.0, 3.0};
+func main () {
+    putFloat(a[0]);
+}"""
+        expect = "1.0"
+        self.assertTrue(TestCodeGen.test(input,expect,559))
+    def test_global_var2(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+}
+var a A = A{a: 1, b: 2.0};
+func main () {
+    putInt(a.a);
+}"""
+        expect = "1"
+        self.assertTrue(TestCodeGen.test(input,expect,560))
+    def test_global_var3(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+}
+var a A = A{a: 1, b: 2.0};
+func Add(b A) A {
+    return A{a: a.a + b.a, b: a.b + b.b};
+}
+func main () {
+    var b = A{a: 3, b: 4.0};
+    var c = Add(b);
+    putIntLn(c.a);
+    putFloat(c.b);
+}"""
+        expect = "4\n6.0"
+        self.assertTrue(TestCodeGen.test(input,expect,561))
+    def test_global_var4(self):
+        input = """
+type A struct {
+    a int;
+    b float;
+}
+func (a A) Add(b A) A {
+    return A{a: a.a + b.a, b: a.b + b.b};
+}
+var a A = A{a: 1, b: 2.0};
+func main () {
+    var b = A{a: 3, b: 4.0};
+    var c = a.Add(b);
+    putIntLn(c.a);
+    putFloat(c.b);
+}"""
+        expect = "4\n6.0"
+        self.assertTrue(TestCodeGen.test(input,expect,562))
+    def test_global_var5(self):
+        input = """
+var a int = 10;
+var b float = a + 12.5;
+var c boolean = a > 5 || b < 20.0;
+func main () {
+    putIntLn(a);
+    putFloatLn(b);
+    putBool(c);
+}"""
+        expect = "10\n22.5\ntrue"
+        self.assertTrue(TestCodeGen.test(input,expect,563))
+#     def test_add_string0(self):
+#         input = """
+# func main() {
+#     var a string = "Hello, ";
+#     var b string = "World";
+#     var c string = a + b;
+#     putString(c);
+# }
+# """
+#         expect = "Hello, World"
+#         self.assertTrue(TestCodeGen.test(input,expect,564))
+#     def test_add_string1(self):
+#         input = """
+# var arr [2]string = [2]string{"Viet", "Nam"};
+# type A struct {
+#     a string;
+# }
+# func getStr() string {
+#     return "Hello, ";
+# }
+# func main () {
+#     var a A = A{a: "!"};
+#     putString(getStr() + " " + "!" + getStr());
+# }
+# """
+#         expect = "Hello, Viet Nam!"
+#         self.assertTrue(TestCodeGen.test(input,expect,565))
+    def test_var_decl3(self):
+        input = """
+var a = 2;
+func main() {
+    var b [a][a] int;
+    putIntLn(b[0][0]);
+    b[0][0] := 20;
+    putInt(b[0][0]);
+}
+"""
+        expect = "0\n20"
+        self.assertTrue(TestCodeGen.test(input,expect,566))
+    def test_array7(self):
+        input = """
+const a = 2;
+const b = a + 3;
+func increment(a int) int {
+    return a + 1;
+}
+func main () {
+    var arr [a][b][increment(2)]boolean;
+    putBoolLn(arr[0][0][0]);
+    arr[0][0][0] := true;
+    arr[0][0][1] := arr[0][0][0] || arr[0][0][1];
+    putBool(arr[0][0][1]);
+}"""
+        expect = """false\ntrue"""
+        self.assertTrue(TestCodeGen.test(input,expect,567))
+    def test_array8(self):
+        input = """
+type A struct {
+    a int;
+}
+const a = A{a: 3};
+var arr [2][2]int = [2][2]int{{1, 2}, {3, 4}};
+func main () {
+    var array[a.a][arr[0][1]][arr[1][0]]int;
+    putInt(array[0][1][2]);
+}"""
+        expect = "0"
+        self.assertTrue(TestCodeGen.test(input,expect,568))
