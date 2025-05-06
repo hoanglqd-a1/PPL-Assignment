@@ -37,4 +37,4 @@ p_call_builtin(writeBooleanLn,[V]) :- (boolean(V);throw(type_mismatch(call(write
 p_call_builtin(readBool,V) :- read(V),(boolean(V);throw(type_mismatch(call(readBool,[])))),!.
 p_call_builtin(writeLn,[]) :- nl,!.
 p_call_builtin(writeStrLn,[V]) :- (string(V);throw(type_mismatch(call(writeStrLn,[V])))),writeln(V),!.
-p_call_builtin(writeStr,[V]) :- (string(V);throw(type_mismatch(call(writeStrLn,[V])))),write(V).
+p_call_builtin(writeStr,[V]) :- (string(V);throw(type_mismatch(call(writeStr,[V])))),write(V),!.

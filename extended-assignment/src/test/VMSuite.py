@@ -87,4 +87,43 @@ class VMSuite(unittest.TestCase):
         input = """[[],[proc(foo,[par(a,integer),par(a,float)],[])],[]]."""
         expect = "Redeclared identifier: par(a,float)"
         self.assertTrue(TestVM.test(input, expect, 420))
+    def test_simple_program4(self):
+        input = """[[],[],[call(writeIntLn,[1]),call(writeRealLn,[12.0]),call(writeStrLn,["abc"]),call(writeBool,[true])]]."""
+        expect = "1\n12.0\nabc\ntrue"
+        self.assertTrue(TestVM.test(input, expect, 421))
+    def test_assign0(self):
+        input = """[
+            [],
+            [],
+            [assign(a,10)]]."""   
+        expect = "Undeclared identifier: assign(a,10)"
+        self.assertTrue(TestVM.test(input, expect, 422))
+    def test_assign1(self):
+        input = """[
+            [var(a, integer)],
+            [],
+            [assign(a, 10), call(writeInt,[1])]]."""
+        expect = "1"
+        self.assertTrue(TestVM.test(input, expect, 423))
+    def test_assign2(self):
+        input = """[
+            [var(a, integer), var(b, integer)],
+            [],
+            [assign(a, 10), call(writeInt,[10])]]."""
+        expect = "10"
+        self.assertTrue(TestVM.test(input, expect, 424))
+    def test_assign3(self):
+        input = """[
+            [const(a, 12), var(b, integer)],
+            [],
+            [assign(a, 10), call(writeInt,[10])]]."""
+        expect = "Cannot assign to a constant: assign(a,10)"
+        self.assertTrue(TestVM.test(input, expect, 425))
+    def test_assign4(self):
+        input = """[
+            [var(a, integer), var(b, integer)],
+            [],
+            [assign(a, 10.0)]]."""
+        expect = "Type mismatch: assign(a,10.0)"
+        self.assertTrue(TestVM.test(input, expect, 426))
 
