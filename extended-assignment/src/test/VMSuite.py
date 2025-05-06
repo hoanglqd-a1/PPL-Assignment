@@ -52,7 +52,7 @@ class VMSuite(unittest.TestCase):
         expect = "-6.1"
         self.assertTrue(TestVM.test(input, expect, 411))
     def test_constdecl0(self):
-        input = """[[const(a,1)],[],[call(writeInt,[1])]]."""
+        input = """[[const(a,times(1,1))],[],[call(writeInt,[1])]]."""
         expect = "1"
         self.assertTrue(TestVM.test(input, expect, 412))
     def test_constdecl1(self):
@@ -114,16 +114,37 @@ class VMSuite(unittest.TestCase):
         self.assertTrue(TestVM.test(input, expect, 424))
     def test_assign3(self):
         input = """[
-            [const(a, 12), var(b, integer)],
+            [const(a, 12),var(b,integer)],
             [],
-            [assign(a, 10), call(writeInt,[10])]]."""
+            [assign(a, 10),call(writeInt,[10])]]."""
         expect = "Cannot assign to a constant: assign(a,10)"
         self.assertTrue(TestVM.test(input, expect, 425))
     def test_assign4(self):
         input = """[
-            [var(a, integer), var(b, integer)],
+            [var(a,integer),var(b,integer)],
             [],
-            [assign(a, 10.0)]]."""
+            [assign(a,10.0)]]."""
         expect = "Type mismatch: assign(a,10.0)"
         self.assertTrue(TestVM.test(input, expect, 426))
+    def test_assign5(self):
+        input = """[
+        [var(a,integer)],
+        [],
+        [assign(a,10),call(writeInt,[a])]]."""
+        expect = "10"
+        self.assertTrue(TestVM.test(input, expect, 427))
+    def test_vardecl0(self):
+        input = """[
+        [var(a,integer),const(b,10)],
+        [],
+        [var(a,integer),assign(a,12),call(writeInt,[a])]]."""
+        expect = "12"
+        self.assertTrue(TestVM.test(input, expect, 428))
+    def test_constdecl4(self):
+        input = """[
+        [var(a,integer),const(b,10)],
+        [],
+        [const(a,add(10,2)),call(writeInt,[a])]]."""
+        expect = "12"
+        self.assertTrue(TestVM.test(input, expect, 429))
 
