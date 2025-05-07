@@ -3,7 +3,7 @@ from TestUtils import TestVM
 
 
 class VMSuite(unittest.TestCase):
-    def test_simple_program(self):        
+    def test_simple_program(self):
         input = """[[],[],[call(writeInt,[3])]]."""
         expect = "3"    
         self.assertTrue(TestVM.test(input, expect, 401))
@@ -147,4 +147,38 @@ class VMSuite(unittest.TestCase):
         [const(a,add(10,2)),call(writeInt,[a])]]."""
         expect = "12"
         self.assertTrue(TestVM.test(input, expect, 429))
-
+    def test_proccall0(self):
+        input = """[
+        [],
+        [proc(foo,[par(a,integer)],[])],
+        [call(foo,[10,12]),call(writeInt,[10])]]."""
+        expect = "Wrong number of arguments: call(foo,[10,12])"
+        self.assertTrue(TestVM.test(input, expect, 430))
+    def test_proccall1(self):
+        input = """[
+        [],
+        [],
+        [call(foo,[10])]]."""
+        expect = "Undeclared procedure: call(foo,[10])"
+        self.assertTrue(TestVM.test(input, expect, 431))
+    def test_proccall2(self):
+        input = """[
+        [],
+        [proc(foo,[par(a,integer)],[call(writeInt,[10])])],
+        [call(foo,[10])]]."""
+        expect = "10"
+        self.assertTrue(TestVM.test(input, expect, 432))
+    def test_proccall3(self):
+        input = """[
+        [const(b,12)],
+        [proc(foo,[par(a,integer)],[call(writeIntLn,[a]),call(writeInt,[b])])],
+        [call(foo,[10])]]."""
+        expect = "10\n12"
+        self.assertTrue(TestVM.test(input, expect, 433))
+    def test_proccall4(self):
+        input = """[
+        [var(a,integer)],
+        [proc(foo,[par(b,integer)],[assign(a,b),call(writeIntLn,[a])])],
+        [assign(a,10),call(writeIntLn,[a]),call(foo,[20]),call(writeIntLn,[a])]]."""
+        expect = "10\n20\n10\n"
+        self.assertTrue(TestVM.test(input, expect, 434))
