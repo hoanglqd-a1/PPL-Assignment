@@ -180,5 +180,49 @@ class VMSuite(unittest.TestCase):
         [var(a,integer)],
         [proc(foo,[par(b,integer)],[assign(a,b),call(writeIntLn,[a])])],
         [assign(a,10),call(writeIntLn,[a]),call(foo,[20]),call(writeIntLn,[a])]]."""
-        expect = "10\n20\n10\n"
+        expect = "10\n20\n20\n"
         self.assertTrue(TestVM.test(input, expect, 434))
+    def test_funccall0(self):
+        input = """[
+        [],
+        [func(foo,[par(a,integer)],integer,[assign(foo,a)])],
+        [call(writeInt,[call(foo,[10])])]]."""
+        expect = "10"
+        self.assertTrue(TestVM.test(input, expect, 435))
+    def test_funccall1(self):
+        input = """[
+        [],
+        [],
+        [call(writeInt,[call(foo,[10])])]]."""
+        expect = "Undeclared function: call(foo,[10])"
+        self.assertTrue(TestVM.test(input, expect, 436))
+    def test_funccall2(self):
+        input = """[
+        [],
+        [func(foo,[par(a,integer)],integer,[assign(foo,a)])],
+        [call(writeInt,[call(foo,[10,12])])]]."""
+        expect = "Wrong number of arguments: call(foo,[10,12])"
+        self.assertTrue(TestVM.test(input, expect, 437))
+    def test_funccall3(self):
+        input = """[
+        [],
+        [func(foo,[par(a,integer)],integer,[assign(a,20),assign(foo,a)])],
+        [var(a,integer),assign(a,10),call(writeIntLn,[call(foo,[20])]),call(writeIntLn,[a])]]."""
+        expect = "20\n10\n"
+        self.assertTrue(TestVM.test(input, expect, 438))
+    def test_funccall4(self):
+        input = """[
+        [],
+        [func(foo, [par(a, integer)], integer, [assign(foo, times(a, 2))])
+        ,func(goo, [par(a, integer)], integer, [assign(goo, times(a, a))])],
+        [call(writeInt, [call(foo, [call(goo, [3])])])]]."""
+        expect = "18"
+        self.assertTrue(TestVM.test(input, expect, 439))
+    def test_funccall5(self):
+        input = """[
+        [var(b, integer)],
+        [func(foo, [], integer, [assign(b, add(b, 1)), assign(foo, b)])
+        ,func(goo, [par(a, integer), par(b, integer), par(c, integer)], integer, [assign(goo, add(add(a, b), c))])],
+        [assign(b, 0), call(writeIntLn, [call(goo, [call(foo, []), call(foo, []), call(foo, [])])]), call(writeIntLn, [b])]]."""
+        expect = "6\n3\n"
+        self.assertTrue(TestVM.test(input, expect, 440))
