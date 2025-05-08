@@ -4,8 +4,8 @@
 reduce_prog([Var,Func,Stmt]) :-
 		create_env(Var,env([[]],false),Env1),
 		create_env(Func,Env1,Env2),
-		Env2 = env(E2,_),
-		reduce_stmt(config(Stmt,env([[]|E2],_)),_).
+		enterBlock(Env2,Env3),
+		reduce_stmt(config(Stmt,Env3),_).
 											
 %check if X has been declared in the first list of the environment
 has_declared(X,[id(X,_,_,_)|_],_) :- !.
@@ -43,6 +43,35 @@ create_env([par(X,Y)|L],env([L1|L2],T),[V|VTail],L3):- create_env(L,env([[id(X,p
 % reduce_stmt/2
 reduce_stmt(config([],Env),Env) :- !.
 
+reduce_stmt(config([assign(Name,Expr)| STail],Env), T) :-
+		has_defined(Name,Env),!,
+		reduce_all(config(Expr,Env),config(Value,Env1)),
+		find_and_assign(assign(Name,Value),Env1,Env2),
+		reduce_stmt(config(STail,Env2),T).
+reduce_stmt(config([assign(Name, Expr)|_],_),_) :- throw(undeclare_identifier(assign(Name,Expr))).
+
+reduce_stmt(config([block(Vars, Stmts)| STail], Env), T) :-
+		enterBlock(Env, Env1),
+		create_env(Vars, Env1, Env2),
+		reduce_stmt(config(Stmts, Env2), Env3),
+		exitBlock(Env3, Env4),
+		reduce_stmt(config(STail, Env4), T).
+
+reduce_stmt(config([if(Cond, Then, Else)| STail], Env), T) :-
+		reduce_all(config(Cond, Env), config(Bool, Env1)),
+		(Bool = true -> Stmt = Then;
+		Bool = false -> Stmt = Else;
+		throw(type_mismatch(if(Cond, Then, Else)))),
+		reduce_stmt(config([Stmt|STail], Env1), T).
+reduce_stmt(config([if(Cond, Then)| STail], Env), T) :-
+		reduce_stmt(config([if(Cond, Then, block([], []))| STail], Env), T).
+
+reduce_stmt(config([while(Cond, Body)| STail], Env), T) :-
+		reduce_all(config(Cond, Env), config(Bool, Env1)),
+		(Bool = true -> reduce_stmt(config([Body, while(Cond, Body)| STail], Env1), T);
+		Bool = false -> reduce_stmt(config(STail, Env1), T);
+		throw(type_mismatch(while(Cond, Body)))).
+
 reduce_stmt(config([call(Name,[Expr])|Tail],Env1),T) :- is_builtin(Name,_),!,
 		reduce_all(config(Expr,Env1),config(Value,Env2)),
 		p_call_builtin(Name,[Value]),
@@ -60,20 +89,6 @@ reduce_stmt(config([call(Name,Exprs)|STail],Env),T) :-
 		reduce_stmt(config(Body,Env3),Env4),
 		exitBlock(Env4, Env5),
 		reduce_stmt(config(STail, Env5), T).
-
-reduce_stmt(config([assign(Name,Expr)|STail],Env),T) :-
-		has_defined(Name,Env),!,
-		reduce_all(config(Expr,Env),config(Value,Env1)),
-		find_and_assign(assign(Name,Value),Env1,Env2),
-		reduce_stmt(config(STail,Env2),T).
-reduce_stmt(config([assign(Name,Expr)|_],_),_) :- throw(undeclare_identifier(assign(Name,Expr))).
-
-reduce_stmt(config([block(Vars,Stmts)|STail],Env),T) :-
-		enterBlock(Env, Env1),
-		create_env(Vars,Env1,Env2),
-		reduce_stmt(config(Stmts,Env2),Env3),
-		exitBlock(Env3, Env4),
-		reduce_stmt(config(STail,Env4),T).
 
 reduce(config(sub(E),Env0),config(R,Env1)) :- 
 		reduce_all(config(E,Env0),config(V,Env1)),
@@ -140,8 +155,8 @@ reduce(config(ne(E1,E2),Env1),config(R,Env3)) :-
 		reduce_all(config(E2,Env2),config(V2,Env3)),
 		(V1 \= V2 -> R = true; R = false).
 
-reduce(config(call(Name,Exprs),Env),config(R,Env5)):-
-		Env = env(E,_),
+reduce(config(call(Name,Exprs),Env),config(R,Env6)):-
+		Env = env(E,M),
 		last(E,EL),
 		(getfunction(Name,EL,Func) -> true; throw(undeclare_function(call(Name,Exprs)))),
 		Func = id(Name,func,[Params,Ret,Body],_),
@@ -151,13 +166,16 @@ reduce(config(call(Name,Exprs),Env),config(R,Env5)):-
 		enterBlock(Env1, Env2),
 		create_env(Params,Env2,Values,Env3),
 		reduce_stmt(config(Body,Env3),Env4),
-		Env4 = env(E4,_),
+		Env4 = env(E4,M),
 		last(E4,Global),
 		(getfunction(Name,Global,Func1); throw(undeclare_function(call(Name,Exprs)))),
 		Func1 = id(Name,func,[_,Ret,_],Value),
+		(Value \= nil; throw(invalid_expression(call(Name,Exprs)))),
 		(type(Value,Ret) -> true; throw(type_mismatch(call(Name,Exprs)))),
 		R = Value,
-		exitBlock(Env4, Env5).
+		setnil(Name, Env4, Env5),
+		exitBlock(Env5, Env6).
+
 reduce(config(I,Env),config(R,Env)):-
 		getvalue(I,Env,R).
 
@@ -165,7 +183,6 @@ reduce_all(config(V,Env),config(V,Env)):- (integer(V);float(V);string(V);boolean
 reduce_all(config(E,Env),config(E2,Env2)):-
 		reduce(config(E,Env),config(E1,Env1)),!,
 		reduce_all(config(E1,Env1),config(E2,Env2)).
-
 
 % Supporting predicates
 boolean(true).
@@ -183,8 +200,8 @@ matchArgs([Arg|ArgTail], [par(_, Type)|ParamTail]) :-
 		type(Arg, Type), matchArgs(ArgTail, ParamTail).
 		
 find_and_assign(assign(Name, Value), Env1, Env2) :-
-		Env1 = env([[id(Name, Kind, Type, _    )| Tail]| LTail], _),
-		Env2 = env([[id(Name, Kind, Type, Value)| Tail]| LTail], _),
+		Env1 = env([[id(Name, Kind, Type, _    )| Tail]| LTail], M),
+		Env2 = env([[id(Name, Kind, Type, Value)| Tail]| LTail], M),
 		(
 			Kind \= const; throw(cannot_assign(assign(Name, Value)))
 		),(
@@ -192,13 +209,13 @@ find_and_assign(assign(Name, Value), Env1, Env2) :-
 			throw(type_mismatch(assign(Name, Value)))
 		).
 find_and_assign(assign(Name,Value),Env1,Env2) :-
-		Env1 = env([[Id|Tail1]|LTail1],_),
-		Env2 = env([[Id|Tail2]|LTail2],_),
-		!,find_and_assign(assign(Name,Value),env([Tail1|LTail1],_),env([Tail2|LTail2],_)).
+		Env1 = env([[Id|Tail1]|LTail1],M),
+		Env2 = env([[Id|Tail2]|LTail2],M),
+		!,find_and_assign(assign(Name,Value),env([Tail1|LTail1],M),env([Tail2|LTail2],M)).
 find_and_assign(assign(Name,Value),Env1,Env2) :-
-		Env1 = env([[]|LTail1],_),
-		Env2 = env([[]|LTail2],_),
-		!,find_and_assign(assign(Name,Value),env(LTail1,_),env(LTail2,_)).
+		Env1 = env([[]|LTail1],M),
+		Env2 = env([[]|LTail2],M),
+		!,find_and_assign(assign(Name,Value),env(LTail1,M),env(LTail2,M)).
 
 getprocedure(Name, [id(Name, proc, P, B)|_], id(Name, proc, P, B)) :- !.
 getprocedure(Name, [_|T], Proc) :-
@@ -212,19 +229,32 @@ getvalue(I, Env, R) :-
 		Env = env([[id(I, _, _, R)|_]|_], _),
 		!,
 		(R \= nil -> true; throw(invalid_expression(I))).
-getvalue(I, env([[_|T]|TT], _), R) :-
+getvalue(I, env([[_|T]|TT], M), R) :-
 		!,
-		getvalue(I, env([T|TT], _), R).
-getvalue(I, env([[]|TT], _), R) :-
+		getvalue(I, env([T|TT], M), R).
+getvalue(I, env([[]|TT], M), R) :-
 		!,
-		getvalue(I, env(TT, _), R).
+		getvalue(I, env(TT, M), R).
 getvalue(I, env([[]], _), _) :-
     	throw(undeclare_identifier(I)).
 
 calculateArgs([], Env, [], Env) :- !.
 calculateArgs([Expr|ETail], Env, [Value|VTail], Env2) :-
-    reduce_all(config(Expr, Env), config(Value, Env1)),
-    calculateArgs(ETail, Env1, VTail, Env2).
+		reduce_all(config(Expr, Env), config(Value, Env1)),
+		calculateArgs(ETail, Env1, VTail, Env2).
 
-enterBlock(Env1, Env2):- Env1 = env(E1,_), Env2 = env([[]|E1],_).
-exitBlock(Env1, Env2) :- Env1 = env([_|E1],_), Env2 = env(E1,_).
+enterBlock(Env1, Env2):- Env1 = env(E1,T), Env2 = env([[]|E1],T).
+exitBlock(Env1, Env2) :- Env1 = env([_|E1],T), Env2 = env(E1,T).
+
+setnil(Name, Env1, Env2) :-
+		Env1 = env(E1, M),
+		Env2 = env(E2, M),
+		RE1 = [H1|T],
+		RE2 = [H2|T],
+		reverse(E1, RE1),
+		reverse(E2, RE2),
+		setnilhelp(Name, H1, H2).
+setnilhelp(Name, [id(Name, Kind, Type, _)|Tail], [id(Name, Kind, Type, nil)|Tail]) :- !.
+setnilhelp(Name, [Id|Tail1], [Id|Tail2]) :-
+		!,
+		setnilhelp(Name, Tail1, Tail2).
