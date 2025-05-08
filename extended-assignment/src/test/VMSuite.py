@@ -251,3 +251,15 @@ class VMSuite(unittest.TestCase):
         call(writeBooleanLn, [band(false, call(foo, []))]), call(writeIntLn, [a])]]."""
         expect = "true\n1\ntrue\n1\ntrue\n2\nfalse\n2\n"
         self.assertTrue(TestVM.test(input, expect, 443))
+    def test_expression2(self):
+        input = """[
+        [],
+        [],
+        [call(writeBooleanLn, [greater(10.0, 2)]), 
+         call(writeBooleanLn, [less(10, 5)]),
+         call(writeBooleanLn, [ge(12, 12.0)]),
+         call(writeBooleanLn, [le(-12, -3)]),
+         call(writeBooleanLn, [ne(idiv(12, 4), 3)]),
+         call(writeBooleanLn, [eql(1, 2)])]]."""
+        expect = "true\nfalse\ntrue\ntrue\nfalse\nfalse\n"
+        self.assertTrue(TestVM.test(input, expect, 444))

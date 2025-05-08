@@ -70,6 +70,7 @@ reduce_stmt(config([call(Name,Exprs)|STail],Env),T) :-
 		Proc = id(Name,proc,Params,Body),
 		(length(Params,L),length(Exprs,L) -> true; throw(wrong_number_of_argument(call(Name,Exprs)))),
 		calculateArgs(Exprs,Env,Values,Env1),
+		(matchArgs(Values,Params) -> true; throw(type_mismatch(call(Name,Exprs)))),
 		enterBlock(Env1, Env2),
 		create_env(Params, Env2, Values, Env3),
 		reduce_stmt(config(Body,Env3),Env4),
@@ -162,6 +163,7 @@ reduce(config(call(Name,Exprs),Env),config(R,Env5)):-
 		Func = id(Name,func,[Params,Ret,Body],_),
 		(length(Params,L),length(Exprs,L) -> true; throw(wrong_number_of_argument(call(Name,Exprs)))),
 		calculateArgs(Exprs,Env,Values,Env1),
+		(matchArgs(Values,Params) -> true; throw(type_mismatch(call(Name,Exprs)))),
 		enterBlock(Env1, Env2),
 		create_env(Params,Env2,Values,Env3),
 		reduce_stmt(config(Body,Env3),Env4),
@@ -191,6 +193,11 @@ type(X,boolean):- boolean(X),!.
 
 matchType(func,[_,Ret,_],Value) :- type(Value,Ret),!.
 matchType(Kind,Type,Value) :- Kind \= const, type(Value,Type),!.
+
+matchArgs([], []).
+matchArgs([Arg|ArgTail], [par(_, Type)|ParamTail]) :-
+		type(Arg, Type), matchArgs(ArgTail, ParamTail).
+		
 find_and_assign(assign(Name, Value), Env1, Env2) :-
 		Env1 = env([[id(Name, Kind, Type, _    )| Tail]| LTail], _),
 		Env2 = env([[id(Name, Kind, Type, Value)| Tail]| LTail], _),
@@ -220,7 +227,7 @@ getfunction(Name, [_|T], Func) :-
 getvalue(I, Env, R) :-
 		Env = env([[id(I, _, _, R)|_]|_], _),
 		!,
-		(R \= nil -> true; throw(undeclare_identifier(I))).
+		(R \= nil -> true; throw(invalid_expression(I))).
 getvalue(I, env([[_|T]|TT], _), R) :-
 		!,
 		getvalue(I, env([T|TT], _), R).
