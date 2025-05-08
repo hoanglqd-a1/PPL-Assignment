@@ -226,3 +226,28 @@ class VMSuite(unittest.TestCase):
         [assign(b, 0), call(writeIntLn, [call(goo, [call(foo, []), call(foo, []), call(foo, [])])]), call(writeIntLn, [b])]]."""
         expect = "6\n3\n"
         self.assertTrue(TestVM.test(input, expect, 440))
+    def test_expression0(self):
+        input = """[
+        [],
+        [],
+        [call(writeIntLn, [imod(10, 3)]), call(writeIntLn, [idiv(10,3)])]]."""
+        expect = "1\n3\n"
+        self.assertTrue(TestVM.test(input, expect, 441))
+    def test_expression1(self):
+        input = """[
+        [var(a, boolean)],
+        [],
+        [assign(a, bnot(true)), call(writeBooleanLn, [a]), call(writeBooleanLn, [band(a, true)]), call(writeBooleanLn, [bor(false, bnot(a))])]]."""
+        expect = "false\nfalse\ntrue\n"
+        self.assertTrue(TestVM.test(input, expect, 442))
+    def test_shortcircuit0(self):
+        input = """[
+        [var(a, integer)],
+        [func(foo, [], boolean, [assign(a, add(a, 1)), assign(foo, true)])],
+        [assign(a, 0),
+        call(writeBooleanLn, [bor(false , call(foo, []))]), call(writeIntLn, [a]),
+        call(writeBooleanLn, [bor(true  , call(foo, []))]), call(writeIntLn, [a]),
+        call(writeBooleanLn, [band(true , call(foo, []))]), call(writeIntLn, [a]),
+        call(writeBooleanLn, [band(false, call(foo, []))]), call(writeIntLn, [a])]]."""
+        expect = "true\n1\ntrue\n1\ntrue\n2\nfalse\n2\n"
+        self.assertTrue(TestVM.test(input, expect, 443))

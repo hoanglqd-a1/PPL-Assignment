@@ -24,7 +24,7 @@ process(break_not_in_loop(X)):- write('Break not in a loop: '),write(X),!.
 process(continue_not_in_loop(X)):- write('Continue not in a loop: '),write(X),!. 
 process(cannot_assign(X)) :- write('Cannot assign to a constant: '),write(X),!.
 
-is_builtin(X,V):-member((X,V),[(readInt,func),(writeIntLn,proc),(writeInt,proc),(readReal,func),(writeRealLn,proc),(writeReal,proc),(readBool,func),(writeBoolLn,proc),(writeBool,proc),(writeLn,proc),(writeStrLn,proc),(writeStr,proc)]).
+is_builtin(X,V):-member((X,V),[(readInt,func),(writeIntLn,proc),(writeInt,proc),(readReal,func),(writeRealLn,proc),(writeReal,proc),(readBool,func),(writeBooleanLn,proc),(writeBool,proc),(writeLn,proc),(writeStrLn,proc),(writeStr,proc)]).
 
 p_call_builtin(writeInt,[V]) :- (integer(V);throw(type_mismatch(call(writeInt,[V])))),write(V),!.
 p_call_builtin(writeIntLn,[V]) :- (integer(V);throw(type_mismatch(call(writeIntLn,[V])))),writeln(V),!.

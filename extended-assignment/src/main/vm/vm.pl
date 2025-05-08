@@ -70,11 +70,11 @@ reduce_stmt(config([call(Name,Exprs)|STail],Env),T) :-
 		Proc = id(Name,proc,Params,Body),
 		(length(Params,L),length(Exprs,L) -> true; throw(wrong_number_of_argument(call(Name,Exprs)))),
 		calculateArgs(Exprs,Env,Values,Env1),
-		Env1 = env(E1,_),
-		create_env(Params,env([[]|E1],_),Values,Env2),
-		reduce_stmt(config(Body,Env2),Env3),
-		Env3 = env([_|ETail3],_),
-		reduce_stmt(config(STail,env(ETail3,_)),T).
+		enterBlock(Env1, Env2),
+		create_env(Params, Env2, Values, Env3),
+		reduce_stmt(config(Body,Env3),Env4),
+		exitBlock(Env4, Env5),
+		reduce_stmt(config(STail, Env5), T).
 
 reduce_stmt(config([assign(Name,Expr)|STail],Env),T) :-
 		has_defined(Name,Env),!,
@@ -83,43 +83,95 @@ reduce_stmt(config([assign(Name,Expr)|STail],Env),T) :-
 		reduce_stmt(config(STail,Env2),T).
 reduce_stmt(config([assign(Name,Expr)|_],_),_) :- throw(undeclare_identifier(assign(Name,Expr))).
 
-reduce(config(sub(E),Env),config(R,Env)) :- 
-		reduce_all(config(E,Env),config(V,Env)),
+reduce_stmt(config([block(Vars,Stmts)|STail],Env),T) :-
+		enterBlock(Env, Env1),
+		create_env(Vars,Env1,Env2),
+		reduce_stmt(config(Stmts,Env2),Env3),
+		exitBlock(Env3, Env4),
+		reduce_stmt(config(STail,Env4),T).
+
+reduce(config(sub(E),Env0),config(R,Env1)) :- 
+		reduce_all(config(E,Env0),config(V,Env1)),
 		R is -V.
-reduce(config(add(E1,E2),Env),config(R,Env)) :-
-		reduce_all(config(E1,Env),config(V1,Env)),
-		reduce_all(config(E2,Env),config(V2,Env)),
+reduce(config(add(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
 		R is V1+V2.
-reduce(config(sub(E1,E2),Env),config(R,Env)) :-
-		reduce_all(config(E1,Env),config(V1,Env)),
-		reduce_all(config(E2,Env),config(V2,Env)),
+reduce(config(sub(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
 		R is V1-V2.
-reduce(config(times(E1,E2),Env),config(R,Env)) :-
-		reduce_all(config(E1,Env),config(V1,Env)),
-		reduce_all(config(E2,Env),config(V2,Env)),
+reduce(config(times(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
 		R is V1*V2.
-reduce(config(rdiv(E1,E2),Env),config(R,Env)) :-
-		reduce_all(config(E1,Env),config(V1,Env)),
-		reduce_all(config(E2,Env),config(V2,Env)),
+reduce(config(rdiv(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
 		R is V1/V2.
-reduce(config(call(Name,Exprs),Env),config(R,Env4)):-
+reduce(config(idiv(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		R is V1//V2.
+reduce(config(imod(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		R is V1 mod V2.
+reduce(config(bnot(E),Env1),config(R,Env2)) :-
+		reduce_all(config(E,Env1),config(V,Env2)),
+		(V = false -> R = true; R = false).
+reduce(config(band(E1, E2), Env1), config(R, Env)) :-
+		reduce_all(config(E1, Env1), config(V1, Env2)),
+		(V1 = false -> (R = false, Env = Env2);
+		reduce_all(config(E2, Env2), config(V2, Env3)),
+		R = V2, Env = Env3).
+reduce(config(bor(E1, E2), Env1), config(R, Env)) :-
+		reduce_all(config(E1, Env1), config(V1, Env2)),
+		(V1 = true -> (R = V1, Env = Env2);
+		reduce_all(config(E2, Env2), config(V2, Env3)),
+		R = V2, Env = Env3).
+reduce(config(greater(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 > V2 -> R = true; R = false).
+reduce(config(less(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 < V2 -> R = true; R = false).
+reduce(config(ge(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 >= V2 -> R = true; R = false).
+reduce(config(le(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 =< V2 -> R = true; R = false).
+reduce(config(eql(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 = V2 -> R = true; R = false).
+reduce(config(ne(E1,E2),Env1),config(R,Env3)) :-
+		reduce_all(config(E1,Env1),config(V1,Env2)),
+		reduce_all(config(E2,Env2),config(V2,Env3)),
+		(V1 \= V2 -> R = true; R = false).
+
+reduce(config(call(Name,Exprs),Env),config(R,Env5)):-
 		Env = env(E,_),
 		last(E,EL),
 		(getfunction(Name,EL,Func) -> true; throw(undeclare_function(call(Name,Exprs)))),
 		Func = id(Name,func,[Params,Ret,Body],_),
 		(length(Params,L),length(Exprs,L) -> true; throw(wrong_number_of_argument(call(Name,Exprs)))),
 		calculateArgs(Exprs,Env,Values,Env1),
-		Env1 = env(E1,_),
-		create_env(Params,env([[]|E1],_),Values,Env2),
-		reduce_stmt(config(Body,Env2),Env3),
-		Env3 = env(E3,_),
-		last(E3,Global),
+		enterBlock(Env1, Env2),
+		create_env(Params,Env2,Values,Env3),
+		reduce_stmt(config(Body,Env3),Env4),
+		Env4 = env(E4,_),
+		last(E4,Global),
 		(getfunction(Name,Global,Func1); throw(undeclare_function(call(Name,Exprs)))),
 		Func1 = id(Name,func,[_,Ret,_],Value),
 		(type(Value,Ret) -> true; throw(type_mismatch(call(Name,Exprs)))),
 		R = Value,
-		E3 = [_|ETail3],
-		Env4 = env(ETail3,_) .
+		exitBlock(Env4, Env5).
 reduce(config(I,Env),config(R,Env)):-
 		getvalue(I,Env,R).
 
@@ -129,15 +181,13 @@ reduce_all(config(E,Env),config(E2,Env2)):-
 		reduce_all(config(E1,Env1),config(E2,Env2)).
 
 
-
-
-
+% Supporting predicates
 boolean(true).
 boolean(false).
 type(X,integer):- integer(X),!.
 type(X,real):- float(X),!.
 type(X,string):- string(X),!.
-type(X,bool):- boolean(X),!.
+type(X,boolean):- boolean(X),!.
 
 matchType(func,[_,Ret,_],Value) :- type(Value,Ret),!.
 matchType(Kind,Type,Value) :- Kind \= const, type(Value,Type),!.
@@ -184,3 +234,6 @@ calculateArgs([], Env, [], Env) :- !.
 calculateArgs([Expr|ETail], Env, [Value|VTail], Env2) :-
     reduce_all(config(Expr, Env), config(Value, Env1)),
     calculateArgs(ETail, Env1, VTail, Env2).
+
+enterBlock(Env1, Env2):- Env1 = env(E1,_), Env2 = env([[]|E1],_).
+exitBlock(Env1, Env2) :- Env1 = env([_|E1],_), Env2 = env(E1,_).
