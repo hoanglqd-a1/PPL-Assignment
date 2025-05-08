@@ -43,22 +43,6 @@ create_env([par(X,Y)|L],env([L1|L2],T),[V|VTail],L3):- create_env(L,env([[id(X,p
 % reduce_stmt/2
 reduce_stmt(config([],Env),Env) :- !.
 
-reduce_stmt(config([var(Name,Type)|_],Env),_) :- 
-		Env = env([L1|_],_),has_declared(Name,L1,_),
-		!,throw(redeclare_identifier(var(Name,Type))).
-reduce_stmt(config([var(Name,Type)|STail],Env),F) :-
-		Env = env([ETail|LETail],_),
-		reduce_stmt(config(STail,env([[id(Name,var,Type,nil)|ETail]|LETail],_)),F).
-
-reduce_stmt(config([const(Name,Expr)|_],Env),_) :- 
-		Env = env([L1|_],_),has_declared(Name,L1,_),
-		!,throw(redeclare_identifier(const(Name,Expr))).
-reduce_stmt(config([const(Name,Expr)|STail],Env),L) :-
-		Env = env([L1|L2],T),
-		reduce_all(config(Expr,Env),config(Value,Env)),
-		type(Value,Type),
-		reduce_stmt(config(STail,env([[id(Name,const,Type,Value)|L1]|L2],T)),L).
-
 reduce_stmt(config([call(Name,[Expr])|Tail],Env1),T) :- is_builtin(Name,_),!,
 		reduce_all(config(Expr,Env1),config(Value,Env2)),
 		p_call_builtin(Name,[Value]),

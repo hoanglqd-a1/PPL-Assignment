@@ -137,15 +137,15 @@ class VMSuite(unittest.TestCase):
         input = """[
         [var(a,integer),const(b,10)],
         [],
-        [var(a,integer),assign(a,12),call(writeInt,[a])]]."""
+        [assign(a,12),call(writeInt,[a])]]."""
         expect = "12"
         self.assertTrue(TestVM.test(input, expect, 428))
     def test_constdecl4(self):
         input = """[
         [var(a,integer),const(b,10)],
         [],
-        [const(a,add(10,2)),call(writeInt,[a])]]."""
-        expect = "12"
+        [call(writeInt,[a])]]."""
+        expect = "Invalid expression: a"
         self.assertTrue(TestVM.test(input, expect, 429))
     def test_proccall0(self):
         input = """[
@@ -205,9 +205,9 @@ class VMSuite(unittest.TestCase):
         self.assertTrue(TestVM.test(input, expect, 437))
     def test_funccall3(self):
         input = """[
-        [],
+        [var(a,integer)],
         [func(foo,[par(a,integer)],integer,[assign(a,20),assign(foo,a)])],
-        [var(a,integer),assign(a,10),call(writeIntLn,[call(foo,[20])]),call(writeIntLn,[a])]]."""
+        [assign(a,10),call(writeIntLn,[call(foo,[20])]),call(writeIntLn,[a])]]."""
         expect = "20\n10\n"
         self.assertTrue(TestVM.test(input, expect, 438))
     def test_funccall4(self):
